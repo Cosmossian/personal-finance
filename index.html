@@ -286,16 +286,57 @@ tfoot td{
 .savings-finish.gain{color:var(--paid);}
 .savings-finish.loss{color:var(--brick);}
 .savings-finish.neg{color:var(--brick);}
-.quick-add{
-  flex:0 0 38px !important;
-  width:38px !important;
-  font-size:10.5px !important;
-  color:var(--brass) !important;
-  border-bottom:1px dotted var(--paper-line) !important;
-  text-align:center !important;
-  margin:0;
+.quick-add-btn{
+  flex:0 0 auto;
+  width:18px;height:18px;
+  border-radius:50%;
+  border:1px solid var(--brass);
+  color:var(--brass);
+  background:none;
+  font-family:'Inter',sans-serif;
+  font-size:13px;
+  line-height:1;
+  padding:0;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
-.quick-add::placeholder{color:var(--brass);opacity:0.6;}
+.quick-add-btn:hover{background:var(--brass);color:var(--paper);}
+.quick-add-popover{
+  position:fixed;
+  z-index:200;
+  background:var(--pine);
+  color:var(--paper);
+  border-radius:3px;
+  padding:8px;
+  display:flex;
+  gap:6px;
+  align-items:center;
+  box-shadow:0 6px 18px rgba(0,0,0,0.3);
+}
+.quick-add-popover input{
+  width:90px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;
+  padding:6px 7px;
+  border:1px solid rgba(246,242,232,0.3);
+  border-radius:2px;
+  background:rgba(246,242,232,0.08);
+  color:var(--paper);
+}
+.quick-add-popover input:focus{outline:none;border-color:var(--brass);}
+.quick-add-popover button{
+  background:var(--brass);
+  color:#2a1f0e;
+  border:none;
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:12.5px;
+  padding:6px 12px;
+  border-radius:2px;
+  cursor:pointer;
+}
 
 .balance-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--paper-line);}
 .balance-name{flex:0 0 150px;font-size:13px;}
@@ -551,6 +592,10 @@ tfoot td{
   <div class="foot-note">your data syncs to your account and recalculates as you type</div>
 </div>
 <div class="saved-flash" id="savedFlash">saved</div>
+<div class="quick-add-popover" id="quickAddPopover" style="display:none;">
+  <input type="number" id="quickAddInput" step="0.01" placeholder="amount">
+  <button id="quickAddConfirm" type="button">Add</button>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
@@ -1012,6 +1057,55 @@ function renderExp(){
   applyMobileLabels('expBody');
 }
 
+let quickAddContext = null;
+
+function openQuickAdd(btn, row, field){
+  quickAddContext = {row, field};
+  const pop = document.getElementById('quickAddPopover');
+  const rect = btn.getBoundingClientRect();
+  pop.style.display = 'flex';
+  const popWidth = 190;
+  let left = rect.left - 20;
+  left = Math.max(8, Math.min(left, window.innerWidth - popWidth - 8));
+  pop.style.left = left + 'px';
+  pop.style.top = (rect.bottom + 6) + 'px';
+  const input = document.getElementById('quickAddInput');
+  input.value = '';
+  setTimeout(()=> input.focus(), 0);
+}
+
+function closeQuickAdd(){
+  document.getElementById('quickAddPopover').style.display = 'none';
+  quickAddContext = null;
+}
+
+function confirmQuickAdd(){
+  if(!quickAddContext) return;
+  const input = document.getElementById('quickAddInput');
+  const add = parseFloat(input.value);
+  if(!isNaN(add)){
+    const {row, field} = quickAddContext;
+    row[field] = Math.round((row[field] + add) * 100) / 100;
+    const mainInput = document.querySelector(`#savBody tr[data-rowid="${row.id}"] input[data-f="${field}"]`);
+    if(mainInput) mainInput.value = row[field].toFixed(2);
+    updateSavDisplays();
+    queueSave();
+  }
+  closeQuickAdd();
+}
+
+document.getElementById('quickAddConfirm').addEventListener('click', confirmQuickAdd);
+document.getElementById('quickAddInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); confirmQuickAdd(); }
+  if(e.key === 'Escape'){ closeQuickAdd(); }
+});
+document.addEventListener('click', (e)=>{
+  const pop = document.getElementById('quickAddPopover');
+  if(pop.style.display !== 'none' && !pop.contains(e.target) && !e.target.classList.contains('quick-add-btn')){
+    closeQuickAdd();
+  }
+});
+
 function computeSavFinishes(){
   const finishes = [];
   let prevFinish = null;
@@ -1059,13 +1153,13 @@ function renderSav(){
       <td class="num">${startCell}</td>
       <td class="num">
         <div class="amt-wrap">
-          <input type="number" class="quick-add" placeholder="+" data-role="quickadd-income" title="type an amount and hit Enter to add it in">
+          <button type="button" class="quick-add-btn" data-role="quickadd-income" title="add an amount">+</button>
           <input type="number" step="0.01" value="${row.income.toFixed(2)}" data-f="income">
         </div>
       </td>
       <td class="num">
         <div class="amt-wrap">
-          <input type="number" class="quick-add" placeholder="+" data-role="quickadd-out" title="type an amount and hit Enter to add it in">
+          <button type="button" class="quick-add-btn" data-role="quickadd-out" title="add an amount">+</button>
           <input type="number" step="0.01" value="${row.out.toFixed(2)}" data-f="out">
         </div>
       </td>
@@ -1085,19 +1179,9 @@ function renderSav(){
       }
     });
     tr.querySelectorAll('[data-role^="quickadd"]').forEach(el=>{
-      el.addEventListener('keydown', (e)=>{
-        if(e.key !== 'Enter') return;
-        e.preventDefault();
-        const add = parseFloat(el.value);
-        if(!isNaN(add)){
-          const targetField = el.dataset.role === 'quickadd-income' ? 'income' : 'out';
-          row[targetField] = Math.round((row[targetField] + add) * 100) / 100;
-          const mainInput = tr.querySelector(`input[data-f="${targetField}"]`);
-          if(mainInput) mainInput.value = row[targetField].toFixed(2);
-          el.value = '';
-          updateSavDisplays();
-          queueSave();
-        }
+      el.addEventListener('click', ()=>{
+        const targetField = el.dataset.role === 'quickadd-income' ? 'income' : 'out';
+        openQuickAdd(el, row, targetField);
       });
     });
     tr.querySelector('[data-rm]').addEventListener('click', ()=>{
