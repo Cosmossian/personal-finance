@@ -337,13 +337,13 @@ tfoot td{
 
 <div id="authGate" class="auth-gate">
   <div class="auth-card">
-    <h1>Household Ledger</h1>
-    <p class="auth-sub">sign in to sync your data across your devices</p>
+    <h1 id="authHeading">Sign In</h1>
+    <p class="auth-sub" id="authSub">Welcome back — sign in to sync your data across your devices.</p>
     <input type="email" id="authEmail" placeholder="email" autocomplete="email">
     <input type="password" id="authPassword" placeholder="password" autocomplete="current-password">
     <div class="auth-error" id="authError"></div>
-    <button id="authSignIn" class="advance">Sign In</button>
-    <button id="authSignUp" class="linkbtn ghost auth-alt">Create an account instead</button>
+    <button id="authSubmit" class="advance">Sign In</button>
+    <button id="authToggle" class="linkbtn ghost auth-alt">New here? Create an account</button>
   </div>
 </div>
 
@@ -386,7 +386,8 @@ tfoot td{
         <tr>
           <th>What is it</th>
           <th style="width:66px">Type</th>
-          <th style="width:118px">Date</th>
+          <th style="width:100px">Pay Date</th>
+          <th style="width:118px">Pay By</th>
           <th class="num" style="width:84px">Amount</th>
           <th style="width:150px">Paycheck</th>
           <th style="width:120px">Pay from</th>
@@ -586,23 +587,45 @@ function authErrorText(e){
   return (e && e.message) ? e.message.replace('Firebase: ', '') : 'Something went wrong';
 }
 
-document.getElementById('authSignIn').addEventListener('click', ()=>{
-  const email = document.getElementById('authEmail').value.trim();
-  const pw = document.getElementById('authPassword').value;
-  const err = document.getElementById('authError');
-  err.textContent = '';
-  auth.signInWithEmailAndPassword(email, pw).catch(e=>{ err.textContent = authErrorText(e); });
+let authMode = 'signin';
+
+function renderAuthMode(){
+  const heading = document.getElementById('authHeading');
+  const sub = document.getElementById('authSub');
+  const submit = document.getElementById('authSubmit');
+  const toggle = document.getElementById('authToggle');
+  document.getElementById('authError').textContent = '';
+  if(authMode === 'signin'){
+    heading.textContent = 'Sign In';
+    sub.textContent = 'Welcome back — sign in to sync your data across your devices.';
+    submit.textContent = 'Sign In';
+    toggle.textContent = 'New here? Create an account';
+  } else {
+    heading.textContent = 'Create Account';
+    sub.textContent = 'Set a password to start syncing your data across your devices.';
+    submit.textContent = 'Create Account';
+    toggle.textContent = 'Already have an account? Sign in';
+  }
+}
+
+document.getElementById('authToggle').addEventListener('click', ()=>{
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  renderAuthMode();
 });
 
-document.getElementById('authSignUp').addEventListener('click', ()=>{
+document.getElementById('authSubmit').addEventListener('click', ()=>{
   const email = document.getElementById('authEmail').value.trim();
   const pw = document.getElementById('authPassword').value;
   const err = document.getElementById('authError');
   err.textContent = '';
-  auth.createUserWithEmailAndPassword(email, pw).catch(e=>{ err.textContent = authErrorText(e); });
+  const action = authMode === 'signin'
+    ? auth.signInWithEmailAndPassword(email, pw)
+    : auth.createUserWithEmailAndPassword(email, pw);
+  action.catch(e=>{ err.textContent = authErrorText(e); });
 });
 
 document.getElementById('signOutBtn').addEventListener('click', ()=> auth.signOut());
+
 
 function render(){
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
@@ -638,7 +661,7 @@ function renderPay(){
     const inGroup = isBill && row.groupId && counts[row.groupId] > 1;
     tr.className = (isBill ? ('bill-row' + (row.paid?' paid':'')) : '') + (inGroup ? ' split-row' : '');
 
-    let paycheckCell, methodCell, nameCell;
+    let paycheckCell, methodCell, nameCell, payDateCell;
     if(isBill){
       const opts = incomes.map(inc=>`<option value="${inc.id}" ${row.paycheckId===inc.id?'selected':''}>${escapeHtml(inc.name)} · ${shortDate(inc.date)}</option>`).join('');
       paycheckCell = `<select data-f="paycheckId">${opts || '<option value="">no paychecks yet</option>'}</select>`;
@@ -646,6 +669,8 @@ function renderPay(){
           <option value="direct" ${row.method==='direct'?'selected':''}>pay directly</option>
           <option value="savings" ${row.method==='savings'?'selected':''}>into savings</option>
         </select>`;
+      const linkedPaycheck = incomes.find(inc=>inc.id===row.paycheckId);
+      payDateCell = linkedPaycheck ? `<span class="dim">${shortDate(linkedPaycheck.date)}</span>` : '<span class="dim">—</span>';
       let tag = '';
       if(inGroup){
         groupSeen[row.groupId] = (groupSeen[row.groupId]||0)+1;
@@ -663,6 +688,7 @@ function renderPay(){
     } else {
       paycheckCell = '<span class="dim">—</span>';
       methodCell = '<span class="dim">—</span>';
+      payDateCell = `<input type="date" value="${row.date}" data-f="date">`;
       nameCell = `<input type="text" value="${escapeHtml(row.name)}" data-f="name">`;
     }
 
@@ -674,7 +700,8 @@ function renderPay(){
           <option value="income" ${row.type==='income'?'selected':''}>income</option>
         </select>
       </td>
-      <td><input type="date" value="${isBill ? row.dueDate : row.date}" data-f="${isBill?'dueDate':'date'}"></td>
+      <td>${payDateCell}</td>
+      <td>${isBill ? `<input type="date" value="${row.dueDate}" data-f="dueDate">` : '<span class="dim">—</span>'}</td>
       <td class="num"><input type="number" step="0.01" value="${row.amount}" data-f="amount"></td>
       <td>${paycheckCell}</td>
       <td>${methodCell}</td>
@@ -688,7 +715,7 @@ function renderPay(){
         if(field==='paid') row.paid = el.checked;
         else if(field==='amount') row.amount = parseFloat(el.value)||0;
         else row[field] = el.value;
-        if(field==='type'){ renderPay(); } // column shape changes
+        if(field==='type' || field==='paycheckId'){ renderPay(); } // Pay Date needs to refresh to match the newly picked paycheck
         if(field==='method'){ el.className = 'method-'+el.value; }
         renderHero(); renderBalance(); queueSave();
       });
@@ -732,9 +759,11 @@ function splitBill(rowId){
   row.amount = half;
   const incomes = incomeRows();
   const otherPaycheck = incomes.find(inc=>inc.id !== row.paycheckId) || incomes[0];
+  // Pay Date already auto-follows whichever paycheck is picked, so Pay By
+  // (the real due date) just carries over unchanged — edit it by hand if the two halves are actually due on different days.
   const clone = {
     id:uid(), name:row.name, type:'bill',
-    dueDate:row.dueDate, amount:remainder,
+    dueDate: row.dueDate, amount:remainder,
     paycheckId: otherPaycheck ? otherPaycheck.id : row.paycheckId,
     method:row.method, paid:false, groupId:row.groupId, payUrl:row.payUrl||''
   };
