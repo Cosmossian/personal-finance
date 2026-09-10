@@ -193,7 +193,7 @@ td input[type=number]::-webkit-outer-spin-button{
   -webkit-appearance:none;
   margin:0;
 }
-.amt-wrap{position:relative;display:flex;align-items:center;}
+.amt-wrap{position:relative;display:flex;align-items:center;justify-content:flex-end;gap:4px;}
 .amt-prefix{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-right:2px;}
 .amt-wrap input{flex:1;}
 .paycheck-border{
@@ -287,11 +287,13 @@ tfoot td{
 .savings-finish.loss{color:var(--brick);}
 .savings-finish.neg{color:var(--brick);}
 .quick-add{
-  width:44px !important;
+  flex:0 0 38px !important;
+  width:38px !important;
   font-size:10.5px !important;
   color:var(--brass) !important;
   border-bottom:1px dotted var(--paper-line) !important;
-  margin-top:2px;
+  text-align:center !important;
+  margin:0;
 }
 .quick-add::placeholder{color:var(--brass);opacity:0.6;}
 
@@ -1051,17 +1053,21 @@ function renderSav(){
     tr.dataset.rowid = row.id;
     const startCell = i===0
       ? `<div class="amt-wrap"><input type="number" step="0.01" value="${row.start.toFixed(2)}" data-f="start"></div>`
-      : `<span class="dim" data-role="start-display" title="carries over from last month's Finish">${row.start.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`;
+      : `<div class="amt-wrap"><span class="dim" data-role="start-display" title="carries over from last month's Finish">${row.start.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`;
     tr.innerHTML = `
       <td><input type="text" value="${escapeHtml(row.month)}" data-f="month"></td>
       <td class="num">${startCell}</td>
       <td class="num">
-        <div class="amt-wrap"><input type="number" step="0.01" value="${row.income.toFixed(2)}" data-f="income"></div>
-        <input type="number" class="quick-add" placeholder="+" data-role="quickadd-income" title="type an amount and hit Enter to add it in">
+        <div class="amt-wrap">
+          <input type="number" class="quick-add" placeholder="+" data-role="quickadd-income" title="type an amount and hit Enter to add it in">
+          <input type="number" step="0.01" value="${row.income.toFixed(2)}" data-f="income">
+        </div>
       </td>
       <td class="num">
-        <div class="amt-wrap"><input type="number" step="0.01" value="${row.out.toFixed(2)}" data-f="out"></div>
-        <input type="number" class="quick-add" placeholder="+" data-role="quickadd-out" title="type an amount and hit Enter to add it in">
+        <div class="amt-wrap">
+          <input type="number" class="quick-add" placeholder="+" data-role="quickadd-out" title="type an amount and hit Enter to add it in">
+          <input type="number" step="0.01" value="${row.out.toFixed(2)}" data-f="out">
+        </div>
       </td>
       <td class="num savings-finish ${finish<0?'neg':''} ${finish>row.start?'gain':finish<row.start?'loss':''}" data-role="finish-display">${(finish>row.start?'↑ ':finish<row.start?'↓ ':'')+numFmt(finish)}</td>
       <td><button class="rmv" data-rm="1">×</button></td>
@@ -1178,10 +1184,21 @@ document.getElementById('addExp').addEventListener('click', ()=>{
   const el = document.querySelector('#expBody textarea[data-f="name"]');
   if(el){ const list = document.querySelectorAll('#expBody textarea[data-f="name"]'); list[list.length-1].focus(); }
 });
+function nextMonthLabel(){
+  const last = data.sav[data.sav.length-1];
+  let base = new Date();
+  if(last && last.month){
+    const parsed = new Date(last.month + ' 1, ' + new Date().getFullYear());
+    if(!isNaN(parsed)) base = parsed;
+  }
+  const next = new Date(base.getFullYear(), base.getMonth()+1, 1);
+  return next.toLocaleDateString(undefined, {month:'long'});
+}
+
 document.getElementById('addSav').addEventListener('click', ()=>{
   const last = data.sav[data.sav.length-1];
   const start = last ? (last.start+last.income-last.out) : 0;
-  data.sav.push({id:uid(), month:'Next month', start, income:0, out:0});
+  data.sav.push({id:uid(), month:nextMonthLabel(), start, income:0, out:0});
   renderSav(); queueSave();
 });
 document.getElementById('balanceBtn').addEventListener('click', balanceEvenly);
