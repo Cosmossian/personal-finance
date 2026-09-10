@@ -420,6 +420,7 @@ tfoot td{
 
 .masthead-right{display:flex;align-items:center;gap:12px;}
 #reloadBtn{font-size:15px;padding:2px 8px;}
+#undoBtn:disabled{opacity:0.35;cursor:default;}
 .pull-indicator{display:none;}
 @media (max-width: 640px){
   body{padding:16px 10px 100px;}
@@ -496,6 +497,7 @@ tfoot td{
   <div class="masthead">
     <h1>Household Ledger</h1>
     <div class="masthead-right">
+      <button class="linkbtn" id="undoBtn" title="undo last change" disabled>↶ undo</button>
       <button class="linkbtn" id="reloadBtn" title="reload">⟳</button>
       <button class="linkbtn" id="signOutBtn">sign out</button>
       <div class="date" id="todayLabel"></div>
@@ -616,6 +618,30 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUid = null;
+let undoStack = [];
+const UNDO_LIMIT = 15;
+
+function pushUndoSnapshot(){
+  try{
+    undoStack.push(JSON.parse(JSON.stringify(data)));
+    if(undoStack.length > UNDO_LIMIT) undoStack.shift();
+  }catch(e){ console.error('snapshot failed', e); }
+  updateUndoButtonState();
+}
+
+function updateUndoButtonState(){
+  const btn = document.getElementById('undoBtn');
+  if(btn) btn.disabled = undoStack.length === 0;
+}
+
+function undoLast(){
+  if(undoStack.length === 0) return;
+  data = undoStack.pop();
+  render();
+  updateUndoButtonState();
+  queueSave();
+  flashSave('undone', false);
+}
 </script>
 <script>
 const money = n => (n<0?'-$':'$') + Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -687,6 +713,7 @@ function defaultData(){
 }
 
 function loadFromCloud(){
+  undoStack = [];
   db.collection('ledgers').doc(currentUid).get().then(docSnap=>{
     data = (docSnap.exists && docSnap.data()) ? docSnap.data() : defaultData();
     data.pay.forEach(r=>{
@@ -696,10 +723,12 @@ function loadFromCloud(){
       if(r.type==='bill' && r.payUrl===undefined) r.payUrl = '';
     });
     render();
+    updateUndoButtonState();
   }).catch(e=>{
     console.error('load failed', e);
     data = defaultData();
     render();
+    updateUndoButtonState();
     flashSave('couldn\u2019t load your saved data — showing a blank template', true);
   });
 }
@@ -784,6 +813,7 @@ document.getElementById('authSubmit').addEventListener('click', ()=>{
 });
 
 document.getElementById('signOutBtn').addEventListener('click', ()=> auth.signOut());
+document.getElementById('undoBtn').addEventListener('click', undoLast);
 document.getElementById('reloadBtn').addEventListener('click', ()=> location.reload());
 
 
@@ -984,6 +1014,7 @@ function renderPay(){
     const spBtn = tr.querySelector('[data-sp]');
     if(spBtn) spBtn.addEventListener('click', ()=> splitBill(row.id));
     tr.querySelector('[data-rm]').addEventListener('click', ()=>{
+      pushUndoSnapshot();
       const gid = row.groupId;
       const amt = row.amount;
       data.pay = data.pay.filter(r=>r.id!==row.id);
@@ -1008,6 +1039,7 @@ function cleanupGroup(groupId, deletedAmount){
 function splitBill(rowId){
   const row = data.pay.find(r=>r.id===rowId);
   if(!row) return;
+  pushUndoSnapshot();
   if(!row.groupId) row.groupId = uid();
   const half = Math.round((row.amount/2) * 100) / 100;
   const remainder = Math.round((row.amount - half) * 100) / 100;
@@ -1049,6 +1081,7 @@ function renderExp(){
       if(field==='name') el.addEventListener('focus', ()=>{ if(el.value === DEFAULT_NAME_EXP) el.select(); });
     });
     tr.querySelector('[data-rm]').addEventListener('click', ()=>{
+      pushUndoSnapshot();
       data.exp = data.exp.filter(r=>r.id!==row.id);
       renderExp();
       onExpChanged();
@@ -1188,6 +1221,7 @@ function renderSav(){
       });
     });
     tr.querySelector('[data-rm]').addEventListener('click', ()=>{
+      pushUndoSnapshot();
       data.sav = data.sav.filter(r=>r.id!==row.id);
       renderSav(); queueSave();
     });
@@ -1219,6 +1253,7 @@ function renderBalance(){
 function balanceEvenly(){
   const incomes = incomeRows();
   if(incomes.length===0) return;
+  pushUndoSnapshot();
   const bills = data.pay.filter(r=>r.type==='bill').slice().sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
   const running = {};
   incomes.forEach(inc=>running[inc.id]=0);
@@ -1310,6 +1345,7 @@ document.getElementById('check3rd').addEventListener('click', ()=>{
 });
 
 document.getElementById('advanceBtn').addEventListener('click', ()=>{
+  pushUndoSnapshot();
   const leftover = renderHero();
   const nextPaycheckDate = incomeRows()[0] ? addMonths(incomeRows()[0].date, 1) : addMonths(todayISO(),1);
 
