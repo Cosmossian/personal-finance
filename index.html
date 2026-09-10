@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger</title>
+<link rel="apple-touch-icon" href="https://i.imgur.com/5Rr00lm.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1f4b32">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --paper:#F6F2E8;
+  --paper-line:#5c684f2b;
+  --ink:#20261c;
+  --ink-soft:#5b6350;
+  --pine:#1f4b32;
+  --pine-deep:#153824;
+  --brass:#a9782f;
+  --brick:#a3402c;
+  --paid:#3c6e4a;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  padding:28px 18px 80px;
+  min-height:100vh;
+}
+.wrap{max-width:880px;margin:0 auto;}
+
+.masthead{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  border-bottom:2px solid var(--ink);
+  padding-bottom:10px;
+  margin-bottom:26px;
+}
+.masthead h1{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:28px;
+  margin:0;
+  letter-spacing:-0.01em;
+}
+.masthead .date{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  color:var(--ink-soft);
+}
+
+.hero{
+  background:var(--pine);
+  color:var(--paper);
+  border-radius:2px;
+  padding:26px 24px;
+  margin-bottom:22px;
+  position:relative;
+  overflow:hidden;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  right:-40px;top:-40px;
+  width:160px;height:160px;
+  border:1px solid rgba(246,242,232,0.14);
+  border-radius:50%;
+}
+.hero .label{
+  font-size:12px;
+  color:#cfe0d2;
+  margin-bottom:6px;
+}
+.hero .amount{
+  font-family:'Fraunces',serif;
+  font-size:54px;
+  font-weight:500;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.hero .amount.neg{color:#e7b8ab;}
+.hero-row{
+  display:flex;
+  gap:28px;
+  margin-top:18px;
+  flex-wrap:wrap;
+}
+.hero-stat{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#d8e4d9;}
+.hero-stat b{display:block;font-size:16px;color:var(--paper);font-weight:600;}
+
+.advance-bar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:26px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  color:var(--ink-soft);
+}
+button.advance{
+  margin-left:auto;
+  background:var(--brass);
+  color:#2a1f0e;
+  border:none;
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:14px;
+  padding:10px 18px;
+  border-radius:2px;
+  cursor:pointer;
+  letter-spacing:0.01em;
+}
+button.advance:hover{background:#bd8a3c;}
+button.advance:active{transform:translateY(1px);}
+
+.panel{margin-bottom:30px;}
+.panel-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1.5px solid var(--ink);
+  padding-bottom:6px;
+  margin-bottom:2px;
+}
+.panel-head h2{
+  font-family:'Fraunces',serif;
+  font-size:18px;
+  font-weight:600;
+  margin:0;
+}
+.panel-sub{
+  font-size:11.5px;
+  color:var(--ink-soft);
+  margin:4px 0 10px;
+}
+.addbtn{
+  background:none;
+  border:1px solid var(--ink-soft);
+  color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  padding:4px 9px;
+  border-radius:2px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.addbtn:hover{border-color:var(--ink);color:var(--ink);}
+.headbtns{display:flex;gap:8px;}
+
+.tablewrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px;}
+th{
+  text-align:left;
+  font-family:'Inter',sans-serif;
+  font-weight:500;
+  font-size:10.5px;
+  color:var(--ink-soft);
+  padding:9px 6px 6px;
+  border-bottom:1px solid var(--paper-line);
+  white-space:nowrap;
+}
+th.num,td.num{text-align:right;}
+td{
+  padding:7px 6px;
+  border-bottom:1px solid var(--paper-line);
+  vertical-align:middle;
+}
+tr.bill-row.paid td{color:var(--ink-soft);}
+tr.bill-row.paid td.name{text-decoration:line-through;text-decoration-color:var(--paid);}
+td input[type=text],td input[type=date],td input[type=number]{
+  font-family:inherit;
+  font-size:12.5px;
+  border:none;
+  background:transparent;
+  color:inherit;
+  width:100%;
+  padding:2px 0;
+}
+td input[type=date]{font-family:'IBM Plex Mono',monospace;font-size:11.5px;}
+td input[type=number]{
+  font-family:'IBM Plex Mono',monospace;
+  text-align:right;
+}
+td input:focus{outline:none;border-bottom:1px solid var(--brass);}
+select{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  background:transparent;
+  border:1px solid var(--paper-line);
+  border-radius:2px;
+  color:var(--ink-soft);
+  padding:3px 3px;
+  max-width:150px;
+}
+select.method-direct{color:var(--paid);border-color:var(--paid);}
+select.method-savings{color:var(--brass);border-color:var(--brass);}
+.chk{width:16px;height:16px;accent-color:var(--paid);cursor:pointer;}
+.rmv{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:14px;padding:0 4px;opacity:0.5;}
+.rmv:hover{opacity:1;color:var(--brick);}
+.split{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:0 4px;opacity:0.55;}
+.split:hover{opacity:1;color:var(--brass);}
+.dim{color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:11px;}
+tr.split-row td{border-left:2px solid var(--brass);}
+tr.split-row td.name{padding-left:8px;}
+.split-tag{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--brass);margin-top:1px;}
+.paylink-row{display:flex;align-items:center;gap:6px;margin-top:2px;}
+.paylink-input{
+  font-family:'IBM Plex Mono',monospace !important;
+  font-size:10.5px !important;
+  color:var(--ink-soft) !important;
+  border-bottom:1px dotted var(--paper-line) !important;
+  flex:1;
+}
+.paylink-input:focus{border-bottom:1px solid var(--brass) !important;}
+.paylink-open{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  color:var(--paid);
+  text-decoration:none;
+  white-space:nowrap;
+  border:1px solid var(--paid);
+  border-radius:2px;
+  padding:1px 5px;
+}
+.paylink-open:hover{background:var(--paid);color:var(--paper);}
+.linkbtn{
+  background:none;
+  border:1px solid var(--paper-line);
+  color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  padding:1px 5px;
+  border-radius:2px;
+  cursor:pointer;
+}
+.linkbtn:hover{border-color:var(--brass);color:var(--brass);}
+.linkbtn.ghost{opacity:0.55;}
+.linkbtn.ghost:hover{opacity:1;}
+tfoot td{
+  border-top:1.5px solid var(--ink);
+  border-bottom:none;
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:600;
+  padding-top:9px;
+}
+
+.savings-finish{color:var(--pine-deep);font-weight:600;}
+.savings-finish.neg{color:var(--brick);}
+
+.balance-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--paper-line);}
+.balance-name{flex:0 0 150px;font-size:13px;}
+.balance-name .d{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);}
+.balance-bar-track{flex:1;height:8px;background:#e5dfce;border-radius:4px;overflow:hidden;}
+.balance-bar-fill{height:100%;background:var(--pine);}
+.balance-bar-fill.neg{background:var(--brick);}
+.balance-amt{flex:0 0 84px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;}
+.balance-amt.neg{color:var(--brick);}
+
+.foot-note{text-align:center;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:36px;}
+.saved-flash{
+  position:fixed;bottom:18px;right:18px;
+  background:var(--pine);color:var(--paper);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:6px 12px;border-radius:2px;opacity:0;transition:opacity .4s;pointer-events:none;
+}
+.saved-flash.show{opacity:0.9;}
+.saved-flash.is-error{background:var(--brick);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <h1>Household Ledger</h1>
+    <div class="date" id="todayLabel"></div>
+  </div>
+
+  <div class="hero">
+    <div class="label">money left this cycle</div>
+    <div class="amount" id="heroAmount">$0.00</div>
+    <div class="hero-row">
+      <div class="hero-stat">income<b id="statIncome">$0</b></div>
+      <div class="hero-stat">bills + subscriptions<b id="statBills">$0</b></div>
+      <div class="hero-stat">unpaid right now<b id="statUnpaid">$0</b></div>
+    </div>
+  </div>
+
+  <div class="advance-bar">
+    advancing moves every paycheck and due date forward one calendar month, on the same day of month
+    <button class="advance" id="advanceBtn">Advance a month →</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Payment Schedule</h2>
+      <div class="headbtns">
+        <button class="addbtn" id="check3rd">check 3rd payday</button>
+        <button class="addbtn" id="addPay">+ add line</button>
+      </div>
+    </div>
+    <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>What is it</th>
+          <th style="width:66px">Type</th>
+          <th style="width:118px">Date</th>
+          <th class="num" style="width:84px">Amount</th>
+          <th style="width:150px">Paycheck</th>
+          <th style="width:120px">Pay from</th>
+          <th style="width:40px">Paid</th>
+          <th style="width:20px"></th>
+        </tr>
+      </thead>
+      <tbody id="payBody"></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Paycheck Balance</h2>
+      <button class="addbtn" id="balanceBtn">balance evenly</button>
+    </div>
+    <div class="panel-sub">what's left from each paycheck once its assigned bills come out — "balance evenly" reassigns bills across paychecks so each leftover is as close as possible</div>
+    <div id="balanceBody"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Monthly Expenditures</h2>
+      <button class="addbtn" id="addExp">+ add line</button>
+    </div>
+    <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>What is it</th><th class="num" style="width:100px">How much</th><th style="width:20px"></th></tr>
+      </thead>
+      <tbody id="expBody"></tbody>
+      <tfoot><tr><td>Total</td><td class="num" id="expTotal">$0.00</td><td></td></tr></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Savings Runway</h2>
+      <button class="addbtn" id="addSav">+ add month</button>
+    </div>
+    <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th class="num" style="width:90px">Start</th>
+          <th class="num" style="width:90px">In</th>
+          <th class="num" style="width:90px">Out</th>
+          <th class="num" style="width:90px">Finish</th>
+          <th style="width:20px"></th>
+        </tr>
+      </thead>
+      <tbody id="savBody"></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="foot-note">everything above is stored privately for you, and recalculates as you type</div>
+</div>
+<div class="saved-flash" id="savedFlash">saved</div>
+
+<script>
+const money = n => (n<0?'-$':'$') + Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const uid = () => Math.random().toString(36).slice(2,9);
+const todayISO = () => new Date().toISOString().slice(0,10);
+const shortDate = iso => { const d = new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}); };
+
+function addMonths(iso, n){
+  const d = new Date(iso+'T00:00:00');
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+n);
+  const lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return d.toISOString().slice(0,10);
+}
+
+// Friday-of-the-month helpers (weekday: 0=Sun ... 5=Fri)
+function weekdaysInMonth(year, monthIndex, weekday){
+  const out = [];
+  const d = new Date(year, monthIndex, 1);
+  while(d.getMonth()===monthIndex){
+    if(d.getDay()===weekday) out.push(new Date(d));
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+const isoDate = d => d.toISOString().slice(0,10);
+
+let data = null;
+let saveTimer = null;
+let editingLinkIds = new Set();
+
+function defaultData(){
+  const now = new Date();
+  const fridays = weekdaysInMonth(now.getFullYear(), now.getMonth(), 5);
+  const firstPayday = fridays[0] || now;
+  const secondPayday = fridays[2] || fridays[fridays.length-1] || now;
+  const pd1 = uid(), pd2 = uid();
+  const plus = (dateObj, n) => { const x = new Date(dateObj); x.setDate(x.getDate()+n); return isoDate(x); };
+  return {
+    pay: [
+      {id:pd1, name:'First Payday', type:'income', date: isoDate(firstPayday), amount:1500.00, paid:false},
+      {id:pd2, name:'Second Payday', type:'income', date: isoDate(secondPayday), amount:1500.00, paid:false},
+      {id:'rent1', name:'Rent', type:'bill', dueDate: isoDate(firstPayday), amount:600.00, paycheckId:pd1, method:'direct', paid:false, groupId:'rent-grp', payUrl:''},
+      {id:'rent2', name:'Rent', type:'bill', dueDate: isoDate(secondPayday), amount:600.00, paycheckId:pd2, method:'direct', paid:false, groupId:'rent-grp', payUrl:''},
+      {id:uid(), name:'Car Insurance', type:'bill', dueDate: plus(firstPayday,6), amount:120.00, paycheckId:pd1, method:'direct', paid:false, groupId:null, payUrl:''},
+      {id:uid(), name:'Phone Bill', type:'bill', dueDate: plus(secondPayday,2), amount:60.00, paycheckId:pd2, method:'direct', paid:false, groupId:null, payUrl:''},
+    ],
+    exp: [
+      {id:uid(), name:'Streaming service', amount:15},
+      {id:uid(), name:'Music service', amount:11},
+      {id:uid(), name:'Internet', amount:70},
+    ],
+    sav: [
+      {id:uid(), month:'This month', start:0, income:0, out:0},
+    ]
+  };
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem('ledger-data');
+    data = raw ? JSON.parse(raw) : defaultData();
+  }catch(e){
+    data = defaultData();
+  }
+  data.pay.forEach(r=>{
+    if(r.type==='bill' && !r.dueDate) r.dueDate = r.date || todayISO();
+    if(r.type==='bill' && !r.method) r.method='direct';
+    if(r.type==='bill' && r.groupId===undefined) r.groupId = null;
+    if(r.type==='bill' && r.payUrl===undefined) r.payUrl = '';
+  });
+  render();
+}
+
+function flashSave(text, isError){
+  const f = document.getElementById('savedFlash');
+  f.textContent = text;
+  f.classList.toggle('is-error', !!isError);
+  f.classList.add('show');
+  clearTimeout(flashSave._t);
+  flashSave._t = setTimeout(()=>f.classList.remove('show'), isError ? 2200 : 900);
+}
+
+function queueSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{
+      localStorage.setItem('ledger-data', JSON.stringify(data));
+      flashSave('saved', false);
+    }catch(e){
+      console.error('save failed', e);
+      flashSave('couldn\u2019t save — this device\u2019s storage may be full', true);
+    }
+  }, 400);
+}
+
+function render(){
+  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
+  renderPay();
+  renderExp();
+  renderSav();
+  renderHero();
+  renderBalance();
+}
+
+function incomeRows(){ return data.pay.filter(r=>r.type==='income').sort((a,b)=>a.date.localeCompare(b.date)); }
+
+function groupCounts(){
+  const counts = {}, totals = {};
+  data.pay.filter(r=>r.type==='bill' && r.groupId).forEach(r=>{
+    counts[r.groupId] = (counts[r.groupId]||0)+1;
+    totals[r.groupId] = (totals[r.groupId]||0)+r.amount;
+  });
+  return {counts, totals};
+}
+
+function renderPay(){
+  const body = document.getElementById('payBody');
+  body.innerHTML = '';
+  const incomes = incomeRows();
+  const {counts, totals} = groupCounts();
+  let groupSeen = {};
+
+  data.pay.forEach(row=>{
+    const tr = document.createElement('tr');
+    tr.dataset.rowid = row.id;
+    const isBill = row.type==='bill';
+    const inGroup = isBill && row.groupId && counts[row.groupId] > 1;
+    tr.className = (isBill ? ('bill-row' + (row.paid?' paid':'')) : '') + (inGroup ? ' split-row' : '');
+
+    let paycheckCell, methodCell, nameCell;
+    if(isBill){
+      const opts = incomes.map(inc=>`<option value="${inc.id}" ${row.paycheckId===inc.id?'selected':''}>${escapeHtml(inc.name)} · ${shortDate(inc.date)}</option>`).join('');
+      paycheckCell = `<select data-f="paycheckId">${opts || '<option value="">no paychecks yet</option>'}</select>`;
+      methodCell = `<select data-f="method" class="method-${row.method}">
+          <option value="direct" ${row.method==='direct'?'selected':''}>pay directly</option>
+          <option value="savings" ${row.method==='savings'?'selected':''}>into savings</option>
+        </select>`;
+      let tag = '';
+      if(inGroup){
+        groupSeen[row.groupId] = (groupSeen[row.groupId]||0)+1;
+        tag = `<span class="split-tag">part ${groupSeen[row.groupId]} of ${counts[row.groupId]} · full bill ${money(totals[row.groupId])}</span>`;
+      }
+      let paylinkArea;
+      if(editingLinkIds.has(row.id)){
+        paylinkArea = `<div class="paylink-row"><input type="url" class="paylink-input" placeholder="payment link (optional)" value="${escapeHtml(row.payUrl||'')}" data-f="payUrl" data-editing="1"></div>`;
+      } else if(row.payUrl){
+        paylinkArea = `<div class="paylink-row"><a class="paylink-open" href="${escapeHtml(row.payUrl)}" target="_blank" rel="noopener" title="open payment link">Pay now ↗</a><button class="linkbtn" data-editlink="1" title="edit payment link">✎</button></div>`;
+      } else {
+        paylinkArea = `<div class="paylink-row"><button class="linkbtn ghost" data-editlink="1">+ link</button></div>`;
+      }
+      nameCell = `<input type="text" value="${escapeHtml(row.name)}" data-f="name">${tag}${paylinkArea}`;
+    } else {
+      paycheckCell = '<span class="dim">—</span>';
+      methodCell = '<span class="dim">—</span>';
+      nameCell = `<input type="text" value="${escapeHtml(row.name)}" data-f="name">`;
+    }
+
+    tr.innerHTML = `
+      <td class="name">${nameCell}</td>
+      <td>
+        <select data-f="type">
+          <option value="bill" ${row.type==='bill'?'selected':''}>bill</option>
+          <option value="income" ${row.type==='income'?'selected':''}>income</option>
+        </select>
+      </td>
+      <td><input type="date" value="${isBill ? row.dueDate : row.date}" data-f="${isBill?'dueDate':'date'}"></td>
+      <td class="num"><input type="number" step="0.01" value="${row.amount}" data-f="amount"></td>
+      <td>${paycheckCell}</td>
+      <td>${methodCell}</td>
+      <td style="text-align:center"><input type="checkbox" class="chk" ${row.paid?'checked':''} data-f="paid"></td>
+      <td>${isBill ? '<button class="split" data-sp="1" title="split this bill across another paycheck">split</button>' : ''}<button class="rmv" data-rm="1">×</button></td>
+    `;
+    tr.querySelectorAll('[data-f]').forEach(el=>{
+      const field = el.dataset.f;
+      const ev = (el.tagName==='SELECT' || field==='paid') ? 'change' : 'input';
+      el.addEventListener(ev, ()=>{
+        if(field==='paid') row.paid = el.checked;
+        else if(field==='amount') row.amount = parseFloat(el.value)||0;
+        else row[field] = el.value;
+        if(field==='type'){ renderPay(); } // column shape changes
+        if(field==='method'){ el.className = 'method-'+el.value; }
+        renderHero(); renderBalance(); queueSave();
+      });
+      if(field==='payUrl') el.addEventListener('blur', ()=> { editingLinkIds.delete(row.id); renderPay(); });
+    });
+    const linkBtn = tr.querySelector('[data-editlink]');
+    if(linkBtn) linkBtn.addEventListener('click', ()=>{
+      editingLinkIds.add(row.id);
+      renderPay();
+      const input = body.querySelector(`tr[data-rowid="${row.id}"] input[data-f="payUrl"]`);
+      if(input) input.focus();
+    });
+    const spBtn = tr.querySelector('[data-sp]');
+    if(spBtn) spBtn.addEventListener('click', ()=> splitBill(row.id));
+    tr.querySelector('[data-rm]').addEventListener('click', ()=>{
+      const gid = row.groupId;
+      const amt = row.amount;
+      data.pay = data.pay.filter(r=>r.id!==row.id);
+      cleanupGroup(gid, amt);
+      renderPay(); renderHero(); renderBalance(); queueSave();
+    });
+    body.appendChild(tr);
+  });
+}
+
+function cleanupGroup(groupId, deletedAmount){
+  if(!groupId) return;
+  const remaining = data.pay.filter(r=>r.groupId===groupId);
+  if(remaining.length === 1){
+    remaining[0].amount = Math.round((remaining[0].amount + (deletedAmount||0)) * 100) / 100;
+    remaining[0].groupId = null;
+  }
+}
+
+function splitBill(rowId){
+  const row = data.pay.find(r=>r.id===rowId);
+  if(!row) return;
+  if(!row.groupId) row.groupId = uid();
+  const half = Math.round((row.amount/2) * 100) / 100;
+  const remainder = Math.round((row.amount - half) * 100) / 100;
+  row.amount = half;
+  const incomes = incomeRows();
+  const otherPaycheck = incomes.find(inc=>inc.id !== row.paycheckId) || incomes[0];
+  const clone = {
+    id:uid(), name:row.name, type:'bill',
+    dueDate:row.dueDate, amount:remainder,
+    paycheckId: otherPaycheck ? otherPaycheck.id : row.paycheckId,
+    method:row.method, paid:false, groupId:row.groupId, payUrl:row.payUrl||''
+  };
+  const idx = data.pay.findIndex(r=>r.id===rowId);
+  data.pay.splice(idx+1, 0, clone);
+  renderPay(); renderHero(); renderBalance(); queueSave();
+}
+
+function renderExp(){
+  const body = document.getElementById('expBody');
+  body.innerHTML = '';
+  let total = 0;
+  data.exp.forEach(row=>{
+    total += row.amount;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${escapeHtml(row.name)}" data-f="name"></td>
+      <td class="num"><input type="number" step="0.01" value="${row.amount}" data-f="amount"></td>
+      <td><button class="rmv" data-rm="1">×</button></td>
+    `;
+    tr.querySelectorAll('[data-f]').forEach(el=>{
+      const field = el.dataset.f;
+      el.addEventListener('input', ()=>{
+        if(field==='amount') row.amount = parseFloat(el.value)||0;
+        else row[field] = el.value;
+        renderExp(); renderHero(); queueSave();
+      });
+    });
+    tr.querySelector('[data-rm]').addEventListener('click', ()=>{
+      data.exp = data.exp.filter(r=>r.id!==row.id);
+      renderExp(); renderHero(); queueSave();
+    });
+    body.appendChild(tr);
+  });
+  document.getElementById('expTotal').textContent = money(total);
+}
+
+function renderSav(){
+  const body = document.getElementById('savBody');
+  body.innerHTML = '';
+  data.sav.forEach(row=>{
+    const finish = row.start + row.income - row.out;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${escapeHtml(row.month)}" data-f="month"></td>
+      <td class="num"><input type="number" step="0.01" value="${row.start}" data-f="start"></td>
+      <td class="num"><input type="number" step="0.01" value="${row.income}" data-f="income"></td>
+      <td class="num"><input type="number" step="0.01" value="${row.out}" data-f="out"></td>
+      <td class="num savings-finish ${finish<0?'neg':''}">${money(finish)}</td>
+      <td><button class="rmv" data-rm="1">×</button></td>
+    `;
+    tr.querySelectorAll('[data-f]').forEach(el=>{
+      const field = el.dataset.f;
+      el.addEventListener('input', ()=>{
+        if(field==='month') row.month = el.value;
+        else row[field] = parseFloat(el.value)||0;
+        renderSav(); queueSave();
+      });
+    });
+    tr.querySelector('[data-rm]').addEventListener('click', ()=>{
+      data.sav = data.sav.filter(r=>r.id!==row.id);
+      renderSav(); queueSave();
+    });
+    body.appendChild(tr);
+  });
+}
+
+function renderBalance(){
+  const el = document.getElementById('balanceBody');
+  const incomes = incomeRows();
+  if(incomes.length===0){ el.innerHTML = '<div class="dim">add a paycheck above to see the split</div>'; return; }
+  const leftovers = incomes.map(inc=>{
+    const assigned = data.pay.filter(r=>r.type==='bill' && r.paycheckId===inc.id).reduce((s,r)=>s+r.amount,0);
+    return {inc, assigned, leftover: inc.amount - assigned};
+  });
+  const maxAbs = Math.max(...leftovers.map(l=>Math.abs(l.leftover)), 1);
+  el.innerHTML = leftovers.map(l=>{
+    const pct = Math.min(Math.abs(l.leftover)/maxAbs*100, 100);
+    const neg = l.leftover<0;
+    return `<div class="balance-row">
+      <div class="balance-name">${escapeHtml(l.inc.name)}<span class="d">${shortDate(l.inc.date)} · ${money(l.inc.amount)}</span></div>
+      <div class="balance-bar-track"><div class="balance-bar-fill ${neg?'neg':''}" style="width:${pct}%"></div></div>
+      <div class="balance-amt ${neg?'neg':''}">${money(l.leftover)}</div>
+    </div>`;
+  }).join('');
+}
+
+function balanceEvenly(){
+  const incomes = incomeRows();
+  if(incomes.length===0) return;
+  const bills = data.pay.filter(r=>r.type==='bill').slice().sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  const running = {};
+  incomes.forEach(inc=>running[inc.id]=0);
+  bills.forEach(bill=>{
+    // eligible paychecks: those on/before the due date, else all of them
+    let eligible = incomes.filter(inc=>inc.date <= (bill.dueDate||'9999'));
+    if(eligible.length===0) eligible = incomes;
+    // pick eligible paycheck with the highest current leftover (income - running assigned)
+    let best = eligible[0];
+    let bestLeftover = best.amount - running[best.id];
+    eligible.forEach(inc=>{
+      const lo = inc.amount - running[inc.id];
+      if(lo > bestLeftover){ best = inc; bestLeftover = lo; }
+    });
+    bill.paycheckId = best.id;
+    running[best.id] += bill.amount;
+  });
+  renderPay(); renderBalance(); queueSave();
+}
+
+function renderHero(){
+  const income = data.pay.filter(r=>r.type==='income').reduce((s,r)=>s+r.amount,0);
+  const bills = data.pay.filter(r=>r.type==='bill').reduce((s,r)=>s+r.amount,0) + data.exp.reduce((s,r)=>s+r.amount,0);
+  const unpaid = data.pay.filter(r=>r.type==='bill' && !r.paid).reduce((s,r)=>s+r.amount,0);
+  const left = income - bills;
+  const amt = document.getElementById('heroAmount');
+  amt.textContent = money(left);
+  amt.classList.toggle('neg', left<0);
+  document.getElementById('statIncome').textContent = money(income);
+  document.getElementById('statBills').textContent = money(bills);
+  document.getElementById('statUnpaid').textContent = money(unpaid);
+  return left;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('addPay').addEventListener('click', ()=>{
+  data.pay.push({id:uid(), name:'New item', type:'bill', dueDate: todayISO(), amount:0, paycheckId: (incomeRows()[0]||{}).id || '', method:'direct', paid:false, groupId:null, payUrl:''});
+  renderPay(); renderHero(); renderBalance(); queueSave();
+});
+document.getElementById('addExp').addEventListener('click', ()=>{
+  data.exp.push({id:uid(), name:'New subscription', amount:0});
+  renderExp(); renderHero(); queueSave();
+});
+document.getElementById('addSav').addEventListener('click', ()=>{
+  const last = data.sav[data.sav.length-1];
+  const start = last ? (last.start+last.income-last.out) : 0;
+  data.sav.push({id:uid(), month:'Next month', start, income:0, out:0});
+  renderSav(); queueSave();
+});
+document.getElementById('balanceBtn').addEventListener('click', balanceEvenly);
+document.getElementById('check3rd').addEventListener('click', ()=>{
+  const incomes = incomeRows();
+  const anchor = incomes[0] ? new Date(incomes[0].date+'T00:00:00') : new Date();
+  const fridays = weekdaysInMonth(anchor.getFullYear(), anchor.getMonth(), 5);
+  if(fridays.length < 5){
+    flashSave('no 3rd payday this month — only 4 Fridays', true);
+    return;
+  }
+  const thirdDate = isoDate(fridays[4]);
+  const already = data.pay.some(r=>r.type==='income' && r.date===thirdDate);
+  if(already){
+    flashSave('3rd payday already on the schedule', true);
+    return;
+  }
+  data.pay.push({id:uid(), name:'Third Payday', type:'income', date: thirdDate, amount:0, paid:false});
+  render();
+  queueSave();
+  flashSave('added a 3rd payday for this month', false);
+});
+
+document.getElementById('advanceBtn').addEventListener('click', ()=>{
+  const leftover = renderHero();
+  const nextPaycheckDate = incomeRows()[0] ? addMonths(incomeRows()[0].date, 1) : addMonths(todayISO(),1);
+
+  const last = data.sav[data.sav.length-1];
+  const start = last ? (last.start+last.income-last.out) : 0;
+  const nextDate = new Date(nextPaycheckDate+'T00:00:00');
+  data.sav.push({
+    id:uid(),
+    month: nextDate.toLocaleDateString(undefined,{month:'long', year:'numeric'}),
+    start,
+    income: Math.max(leftover,0),
+    out: 0
+  });
+
+  data.pay.forEach(row=>{
+    if(row.type==='income'){ row.date = addMonths(row.date, 1); }
+    else { row.dueDate = addMonths(row.dueDate, 1); row.paid = false; }
+  });
+
+  render();
+  queueSave();
+});
+
+load();
+</script>
+</body>
+</html>
