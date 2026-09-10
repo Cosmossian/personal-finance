@@ -272,6 +272,7 @@ tr.split-row td.name{padding-left:8px;}
 .linkbtn:hover{border-color:var(--brass);color:var(--brass);}
 .linkbtn.ghost{opacity:0.55;}
 .date-display{cursor:pointer;border-bottom:1px dotted var(--paper-line);}
+.derived-val{color:var(--ink);border-bottom:1px dotted var(--paper-line);}
 .date-display:hover{color:var(--brass);border-bottom-color:var(--brass);}
 .linkbtn.ghost:hover{opacity:1;}
 tfoot td{
@@ -306,25 +307,27 @@ tfoot td{
 .quick-add-popover{
   position:fixed;
   z-index:200;
-  background:var(--pine);
-  color:var(--paper);
+  background:var(--paper);
+  color:var(--ink);
+  border:1px solid var(--pine);
   border-radius:3px;
   padding:8px;
   display:flex;
   gap:6px;
   align-items:center;
-  box-shadow:0 6px 18px rgba(0,0,0,0.3);
+  box-shadow:0 6px 18px rgba(0,0,0,0.18);
 }
 .quick-add-popover input{
   width:90px;
   font-family:'IBM Plex Mono',monospace;
   font-size:13px;
   padding:6px 7px;
-  border:1px solid rgba(246,242,232,0.3);
+  border:1px solid var(--paper-line);
   border-radius:2px;
-  background:rgba(246,242,232,0.08);
-  color:var(--paper);
+  background:var(--paper);
+  color:var(--ink);
 }
+.quick-add-popover input::placeholder{color:var(--ink-soft);}
 .quick-add-popover input:focus{outline:none;border-color:var(--brass);}
 .quick-add-popover button{
   background:var(--brass);
@@ -1147,7 +1150,7 @@ function renderSav(){
     tr.dataset.rowid = row.id;
     const startCell = i===0
       ? `<div class="amt-wrap"><input type="number" step="0.01" value="${row.start.toFixed(2)}" data-f="start"></div>`
-      : `<div class="amt-wrap"><span class="dim" data-role="start-display" title="carries over from last month's Finish">${row.start.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`;
+      : `<div class="amt-wrap"><span class="derived-val" data-role="start-display" title="carries over from last month's Finish">${row.start.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`;
     tr.innerHTML = `
       <td><input type="text" value="${escapeHtml(row.month)}" data-f="month"></td>
       <td class="num">${startCell}</td>
