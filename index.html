@@ -271,14 +271,90 @@ tfoot td{
 }
 .saved-flash.show{opacity:0.9;}
 .saved-flash.is-error{background:var(--brick);}
+
+.auth-gate{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.auth-card{
+  width:100%;
+  max-width:340px;
+  background:var(--pine);
+  color:var(--paper);
+  border-radius:2px;
+  padding:32px 28px;
+  text-align:center;
+}
+.auth-card h1{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:24px;
+  margin:0 0 6px;
+}
+.auth-sub{
+  font-size:12.5px;
+  color:#cfe0d2;
+  margin:0 0 22px;
+}
+.auth-card input{
+  width:100%;
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  padding:10px 12px;
+  margin-bottom:10px;
+  border:1px solid rgba(246,242,232,0.25);
+  border-radius:2px;
+  background:rgba(246,242,232,0.06);
+  color:var(--paper);
+  box-sizing:border-box;
+}
+.auth-card input::placeholder{color:#a9bfae;}
+.auth-card input:focus{outline:none;border-color:var(--brass);}
+.auth-error{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px;
+  color:#e7b8ab;
+  min-height:16px;
+  margin-bottom:8px;
+}
+.auth-card button.advance{width:100%;margin:6px 0 10px;}
+.auth-alt{
+  background:none;
+  border:none;
+  color:#cfe0d2;
+  text-decoration:underline;
+  opacity:0.8;
+}
+.auth-alt:hover{opacity:1;color:var(--paper);border-color:transparent;}
+
+.masthead-right{display:flex;align-items:center;gap:12px;}
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<div id="authGate" class="auth-gate">
+  <div class="auth-card">
+    <h1>Household Ledger</h1>
+    <p class="auth-sub">sign in to sync your data across your devices</p>
+    <input type="email" id="authEmail" placeholder="email" autocomplete="email">
+    <input type="password" id="authPassword" placeholder="password" autocomplete="current-password">
+    <div class="auth-error" id="authError"></div>
+    <button id="authSignIn" class="advance">Sign In</button>
+    <button id="authSignUp" class="linkbtn ghost auth-alt">Create an account instead</button>
+  </div>
+</div>
+
+<div id="appRoot" class="wrap" style="display:none;">
 
   <div class="masthead">
     <h1>Household Ledger</h1>
-    <div class="date" id="todayLabel"></div>
+    <div class="masthead-right">
+      <button class="linkbtn" id="signOutBtn">sign out</button>
+      <div class="date" id="todayLabel"></div>
+    </div>
   </div>
 
   <div class="hero">
@@ -370,10 +446,27 @@ tfoot td{
     </div>
   </div>
 
-  <div class="foot-note">everything above is stored privately for you, and recalculates as you type</div>
+  <div class="foot-note">your data syncs to your account and recalculates as you type</div>
 </div>
 <div class="saved-flash" id="savedFlash">saved</div>
 
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAqZ-q3TXXUyGh_LDc9IunuM9r9032tJEE",
+  authDomain: "personal-finance-670e5.firebaseapp.com",
+  projectId: "personal-finance-670e5",
+  storageBucket: "personal-finance-670e5.firebasestorage.app",
+  messagingSenderId: "972647293934",
+  appId: "1:972647293934:web:6203b2f8a7ebd2c8dca4ff"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let currentUid = null;
+</script>
 <script>
 const money = n => (n<0?'-$':'$') + Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const uid = () => Math.random().toString(36).slice(2,9);
@@ -433,20 +526,22 @@ function defaultData(){
   };
 }
 
-function load(){
-  try{
-    const raw = localStorage.getItem('ledger-data');
-    data = raw ? JSON.parse(raw) : defaultData();
-  }catch(e){
+function loadFromCloud(){
+  db.collection('ledgers').doc(currentUid).get().then(docSnap=>{
+    data = (docSnap.exists && docSnap.data()) ? docSnap.data() : defaultData();
+    data.pay.forEach(r=>{
+      if(r.type==='bill' && !r.dueDate) r.dueDate = r.date || todayISO();
+      if(r.type==='bill' && !r.method) r.method='direct';
+      if(r.type==='bill' && r.groupId===undefined) r.groupId = null;
+      if(r.type==='bill' && r.payUrl===undefined) r.payUrl = '';
+    });
+    render();
+  }).catch(e=>{
+    console.error('load failed', e);
     data = defaultData();
-  }
-  data.pay.forEach(r=>{
-    if(r.type==='bill' && !r.dueDate) r.dueDate = r.date || todayISO();
-    if(r.type==='bill' && !r.method) r.method='direct';
-    if(r.type==='bill' && r.groupId===undefined) r.groupId = null;
-    if(r.type==='bill' && r.payUrl===undefined) r.payUrl = '';
+    render();
+    flashSave('couldn\u2019t load your saved data — showing a blank template', true);
   });
-  render();
 }
 
 function flashSave(text, isError){
@@ -461,15 +556,53 @@ function flashSave(text, isError){
 function queueSave(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
-    try{
-      localStorage.setItem('ledger-data', JSON.stringify(data));
-      flashSave('saved', false);
-    }catch(e){
-      console.error('save failed', e);
-      flashSave('couldn\u2019t save — this device\u2019s storage may be full', true);
-    }
+    if(!currentUid) return;
+    db.collection('ledgers').doc(currentUid).set(data)
+      .then(()=> flashSave('saved', false))
+      .catch(e=>{
+        console.error('save failed', e);
+        flashSave('couldn\u2019t save — check your connection', true);
+      });
   }, 400);
 }
+
+// --- Auth wiring ---
+auth.onAuthStateChanged(user=>{
+  const gate = document.getElementById('authGate');
+  const app = document.getElementById('appRoot');
+  if(user){
+    currentUid = user.uid;
+    gate.style.display = 'none';
+    app.style.display = '';
+    loadFromCloud();
+  } else {
+    currentUid = null;
+    gate.style.display = '';
+    app.style.display = 'none';
+  }
+});
+
+function authErrorText(e){
+  return (e && e.message) ? e.message.replace('Firebase: ', '') : 'Something went wrong';
+}
+
+document.getElementById('authSignIn').addEventListener('click', ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const pw = document.getElementById('authPassword').value;
+  const err = document.getElementById('authError');
+  err.textContent = '';
+  auth.signInWithEmailAndPassword(email, pw).catch(e=>{ err.textContent = authErrorText(e); });
+});
+
+document.getElementById('authSignUp').addEventListener('click', ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const pw = document.getElementById('authPassword').value;
+  const err = document.getElementById('authError');
+  err.textContent = '';
+  auth.createUserWithEmailAndPassword(email, pw).catch(e=>{ err.textContent = authErrorText(e); });
+});
+
+document.getElementById('signOutBtn').addEventListener('click', ()=> auth.signOut());
 
 function render(){
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
@@ -789,7 +922,6 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
   queueSave();
 });
 
-load();
 </script>
 </body>
 </html>
