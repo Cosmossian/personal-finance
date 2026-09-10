@@ -186,6 +186,22 @@ td input[type=date]{font-family:'IBM Plex Mono',monospace;font-size:11.5px;}
 td input[type=number]{
   font-family:'IBM Plex Mono',monospace;
   text-align:right;
+  -moz-appearance:textfield;
+}
+td input[type=number]::-webkit-inner-spin-button,
+td input[type=number]::-webkit-outer-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+.amt-wrap{position:relative;display:flex;align-items:center;}
+.amt-prefix{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-right:2px;}
+.amt-wrap input{flex:1;}
+.paycheck-dot{
+  display:inline-block;
+  width:8px;height:8px;
+  border-radius:50%;
+  margin-right:6px;
+  flex-shrink:0;
 }
 td input:focus{outline:none;border-bottom:1px solid var(--brass);}
 td textarea.name-input{
@@ -266,8 +282,18 @@ tfoot td{
   padding-top:9px;
 }
 
-.savings-finish{color:var(--pine-deep);font-weight:600;}
+.savings-finish{color:var(--ink-soft);font-weight:600;}
+.savings-finish.gain{color:var(--paid);}
+.savings-finish.loss{color:var(--brick);}
 .savings-finish.neg{color:var(--brick);}
+.quick-add{
+  width:44px !important;
+  font-size:10.5px !important;
+  color:var(--brass) !important;
+  border-bottom:1px dotted var(--paper-line) !important;
+  margin-top:2px;
+}
+.quick-add::placeholder{color:var(--brass);opacity:0.6;}
 
 .balance-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--paper-line);}
 .balance-name{flex:0 0 150px;font-size:13px;}
@@ -347,6 +373,73 @@ tfoot td{
 .auth-alt:hover{opacity:1;color:var(--paper);border-color:transparent;}
 
 .masthead-right{display:flex;align-items:center;gap:12px;}
+#reloadBtn{font-size:15px;padding:2px 8px;}
+.pull-indicator{
+  position:fixed;
+  top:8px;left:0;right:0;
+  text-align:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:var(--pine);
+  opacity:0;
+  transition:opacity .15s;
+  pointer-events:none;
+  z-index:50;
+}
+@media (max-width: 640px){
+  body{padding:16px 10px 100px;}
+  .masthead h1{font-size:22px;}
+  .hero{padding:20px 16px;}
+  .hero .amount{font-size:38px;}
+  .hero-row{gap:16px;}
+  .panel-head h2{font-size:16px;}
+
+  .tablewrap{overflow-x:visible;}
+  table{min-width:0;width:100%;}
+  thead{display:none;}
+  table, tbody, tr{display:block;width:100%;}
+  tr{
+    border:1px solid var(--paper-line);
+    border-radius:3px;
+    margin-bottom:8px;
+    padding:6px 10px;
+  }
+  tr.split-row{border-left:3px solid var(--brass);}
+  td{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:6px 0;
+    border-bottom:1px solid var(--paper-line);
+    text-align:right;
+  }
+  td:last-child{border-bottom:none;}
+  td::before{
+    content:attr(data-label);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9.5px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    flex-shrink:0;
+    text-align:left;
+  }
+  td[data-label=""]::before{display:none;content:none;}
+  td.name{
+    display:block;
+    text-align:left;
+    border-bottom:1.5px solid var(--paper-line);
+    padding-bottom:8px;
+    margin-bottom:2px;
+  }
+  td.name::before{display:none;}
+  td.name textarea{text-align:left;font-size:14px;}
+  td input, td select, td textarea{text-align:right;}
+  td.name textarea, .paylink-row, .split-tag{text-align:left;}
+  td select{max-width:170px;}
+  .amt-wrap{justify-content:flex-end;}
+}
 </style>
 </head>
 <body>
@@ -368,10 +461,13 @@ tfoot td{
   <div class="masthead">
     <h1>Household Ledger</h1>
     <div class="masthead-right">
+      <button class="linkbtn" id="reloadBtn" title="reload">⟳</button>
       <button class="linkbtn" id="signOutBtn">sign out</button>
       <div class="date" id="todayLabel"></div>
     </div>
   </div>
+
+  <div class="pull-indicator" id="pullIndicator">↓ pull to refresh</div>
 
   <div class="hero">
     <div class="label">money left this cycle</div>
@@ -404,7 +500,7 @@ tfoot td{
           <th style="width:66px">Type</th>
           <th style="width:100px">Pay Date</th>
           <th style="width:118px">Pay By</th>
-          <th class="num" style="width:84px">Amount</th>
+          <th class="num" style="width:112px">Amount</th>
           <th style="width:150px">Paycheck</th>
           <th style="width:120px">Pay from</th>
           <th style="width:40px">Paid</th>
@@ -433,7 +529,7 @@ tfoot td{
     <div class="tablewrap">
     <table>
       <thead>
-        <tr><th>What is it</th><th class="num" style="width:100px">How much</th><th style="width:20px"></th></tr>
+        <tr><th>What is it</th><th class="num" style="width:115px">How much</th><th style="width:20px"></th></tr>
       </thead>
       <tbody id="expBody"></tbody>
       <tfoot><tr><td>Total</td><td class="num" id="expTotal">$0.00</td><td></td></tr></tfoot>
@@ -451,10 +547,10 @@ tfoot td{
       <thead>
         <tr>
           <th>Month</th>
-          <th class="num" style="width:90px">Start</th>
-          <th class="num" style="width:90px">In</th>
-          <th class="num" style="width:90px">Out</th>
-          <th class="num" style="width:90px">Finish</th>
+          <th class="num" style="width:100px">Start</th>
+          <th class="num" style="width:100px">In</th>
+          <th class="num" style="width:100px">Out</th>
+          <th class="num" style="width:105px">Finish</th>
           <th style="width:20px"></th>
         </tr>
       </thead>
@@ -487,6 +583,13 @@ let currentUid = null;
 <script>
 const money = n => (n<0?'-$':'$') + Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const uid = () => Math.random().toString(36).slice(2,9);
+const DEFAULT_NAME_PAY = 'New item';
+const DEFAULT_NAME_EXP = 'New subscription';
+const PAYCHECK_COLORS = ['#a9782f', '#3c6e4a', '#7a5ea8', '#a3402c', '#2e6f8e'];
+function paycheckColor(paycheckId, incomes){
+  const idx = incomes.findIndex(inc=>inc.id===paycheckId);
+  return idx === -1 ? 'var(--ink-soft)' : PAYCHECK_COLORS[idx % PAYCHECK_COLORS.length];
+}
 const todayISO = () => new Date().toISOString().slice(0,10);
 const shortDate = iso => { const d = new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}); };
 
@@ -643,6 +746,48 @@ document.getElementById('authSubmit').addEventListener('click', ()=>{
 });
 
 document.getElementById('signOutBtn').addEventListener('click', ()=> auth.signOut());
+document.getElementById('reloadBtn').addEventListener('click', ()=> location.reload());
+
+// Custom pull-to-refresh — iOS standalone (home-screen) apps don't get Safari's native gesture
+(function(){
+  const indicator = document.getElementById('pullIndicator');
+  let startY = null;
+  let pulling = false;
+  const THRESHOLD = 80;
+
+  document.addEventListener('touchstart', (e)=>{
+    if(window.scrollY === 0){
+      startY = e.touches[0].clientY;
+      pulling = true;
+    } else {
+      startY = null;
+      pulling = false;
+    }
+  }, {passive:true});
+
+  document.addEventListener('touchmove', (e)=>{
+    if(!pulling || startY === null) return;
+    const dy = e.touches[0].clientY - startY;
+    if(dy > 0 && window.scrollY === 0){
+      const pull = Math.min(dy, 120);
+      indicator.style.opacity = Math.min(pull / THRESHOLD, 1);
+      indicator.style.transform = `translateY(${Math.min(pull, 60)}px)`;
+      indicator.textContent = pull > THRESHOLD ? '↑ release to refresh' : '↓ pull to refresh';
+    }
+  }, {passive:true});
+
+  document.addEventListener('touchend', (e)=>{
+    if(!pulling || startY === null) return;
+    const dy = (e.changedTouches[0].clientY - startY);
+    indicator.style.opacity = 0;
+    indicator.style.transform = 'translateY(0)';
+    if(dy > THRESHOLD && window.scrollY === 0){
+      location.reload();
+    }
+    pulling = false;
+    startY = null;
+  });
+})();
 
 
 function autoGrow(el){
@@ -673,6 +818,19 @@ function onExpChanged(){
   renderHero();
   renderBalance();
   queueSave();
+}
+
+function applyMobileLabels(tbodyId){
+  const tbody = document.getElementById(tbodyId);
+  if(!tbody) return;
+  const table = tbody.closest('table');
+  if(!table) return;
+  const headers = [...table.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+  [...tbody.children].forEach(tr=>{
+    [...tr.children].forEach((td,i)=>{
+      if(headers[i] !== undefined) td.setAttribute('data-label', headers[i]);
+    });
+  });
 }
 
 function render(){
@@ -710,17 +868,21 @@ function renderPay(){
     const inGroup = isBill && row.groupId && counts[row.groupId] > 1;
     tr.className = (isBill ? ('bill-row' + (row.paid?' paid':'')) : '') + (inGroup ? ' split-row' : '');
 
-    let paycheckCell, methodCell, nameCell, payDateCell;
+    let paycheckCell, methodCell, nameCell, payDateCell, payByCell;
     const isMonthlyBillsRow = isBill && row.name && row.name.trim().toLowerCase().includes('monthly bills');
     if(isBill){
       const opts = incomes.map(inc=>`<option value="${inc.id}" ${row.paycheckId===inc.id?'selected':''}>${escapeHtml(inc.name)} · ${shortDate(inc.date)}</option>`).join('');
-      paycheckCell = `<select data-f="paycheckId">${opts || '<option value="">no paychecks yet</option>'}</select>`;
+      const dotColor = paycheckColor(row.paycheckId, incomes);
+      paycheckCell = `<span class="paycheck-dot" style="background:${dotColor}"></span><select data-f="paycheckId">${opts || '<option value="">no paychecks yet</option>'}</select>`;
       methodCell = `<select data-f="method" class="method-${row.method}">
           <option value="direct" ${row.method==='direct'?'selected':''}>pay directly</option>
           <option value="savings" ${row.method==='savings'?'selected':''}>into savings</option>
         </select>`;
       const linkedPaycheck = incomes.find(inc=>inc.id===row.paycheckId);
       payDateCell = linkedPaycheck ? `<span class="dim">${shortDate(linkedPaycheck.date)}</span>` : '<span class="dim">—</span>';
+      payByCell = editingDateIds.has(row.id)
+        ? `<input type="date" value="${row.dueDate}" data-f="dueDate" data-editing-date="1">`
+        : `<span class="dim date-display" data-editdate="1">${shortDate(row.dueDate)}</span>`;
       let tag = '';
       if(inGroup){
         groupSeen[row.groupId] = (groupSeen[row.groupId]||0)+1;
@@ -744,12 +906,14 @@ function renderPay(){
       payDateCell = editingDateIds.has(row.id)
         ? `<input type="date" value="${row.date}" data-f="date" data-editing-date="1">`
         : `<span class="dim date-display" data-editdate="1">${shortDate(row.date)}</span>`;
-      nameCell = `<textarea class="name-input" data-f="name" rows="1">${escapeHtml(row.name)}</textarea>`;
+      payByCell = '<span class="dim">—</span>';
+      const ownDot = `<span class="paycheck-dot" style="background:${paycheckColor(row.id, incomes)}"></span>`;
+      nameCell = `${ownDot}<textarea class="name-input" data-f="name" rows="1">${escapeHtml(row.name)}</textarea>`;
     }
 
     const amountCell = isMonthlyBillsRow
       ? `<span class="dim" title="synced automatically from Monthly Expenditures">${money(row.amount)}</span>`
-      : `<input type="number" step="0.01" value="${row.amount}" data-f="amount">`;
+      : `<div class="amt-wrap"><span class="amt-prefix">$</span><input type="number" step="0.01" value="${row.amount}" data-f="amount"></div>`;
 
     tr.innerHTML = `
       <td class="name">${nameCell}</td>
@@ -760,7 +924,7 @@ function renderPay(){
         </select>
       </td>
       <td>${payDateCell}</td>
-      <td>${isBill ? `<input type="date" value="${row.dueDate}" data-f="dueDate">` : '<span class="dim">—</span>'}</td>
+      <td>${payByCell}</td>
       <td class="num">${amountCell}</td>
       <td>${paycheckCell}</td>
       <td>${methodCell}</td>
@@ -771,7 +935,7 @@ function renderPay(){
       const field = el.dataset.f;
       const ev = (el.tagName==='SELECT' || field==='paid') ? 'change' : 'input';
       el.addEventListener(ev, ()=>{
-        if(field==='paid') row.paid = el.checked;
+        if(field==='paid'){ row.paid = el.checked; tr.classList.toggle('paid', row.paid); }
         else if(field==='amount') row.amount = parseFloat(el.value)||0;
         else row[field] = el.value;
         if(field==='name') autoGrow(el);
@@ -781,11 +945,15 @@ function renderPay(){
       });
       if(field==='payUrl') el.addEventListener('blur', ()=> { editingLinkIds.delete(row.id); renderPay(); });
       if(el.dataset.editingDate) el.addEventListener('blur', ()=> { editingDateIds.delete(row.id); renderPay(); });
-      if(field==='name') el.addEventListener('blur', ()=>{
-        // renaming to/from "Monthly Bills" changes whether the amount is editable, so refresh
-        syncMonthlyBillsToExpTotal(computeExpTotal());
-        renderPay(); renderHero(); renderBalance(); queueSave();
-      });
+      if(field==='amount') el.addEventListener('blur', ()=> { el.value = row.amount.toFixed(2); });
+      if(field==='name'){
+        el.addEventListener('focus', ()=>{ if(el.value === DEFAULT_NAME_PAY) el.select(); });
+        el.addEventListener('blur', ()=>{
+          // renaming to/from "Monthly Bills" changes whether the amount is editable, so refresh
+          syncMonthlyBillsToExpTotal(computeExpTotal());
+          renderPay(); renderHero(); renderBalance(); queueSave();
+        });
+      }
     });
     const linkBtn = tr.querySelector('[data-editlink]');
     if(linkBtn) linkBtn.addEventListener('click', ()=>{
@@ -798,7 +966,7 @@ function renderPay(){
     if(dateDisplay) dateDisplay.addEventListener('click', ()=>{
       editingDateIds.add(row.id);
       renderPay();
-      const input = body.querySelector(`tr[data-rowid="${row.id}"] input[data-f="date"]`);
+      const input = body.querySelector(`tr[data-rowid="${row.id}"] input[data-editing-date]`);
       if(input) input.focus();
     });
     const spBtn = tr.querySelector('[data-sp]');
@@ -813,6 +981,7 @@ function renderPay(){
     body.appendChild(tr);
   });
   body.querySelectorAll('textarea.name-input').forEach(autoGrow);
+  applyMobileLabels('payBody');
 }
 
 function cleanupGroup(groupId, deletedAmount){
@@ -853,7 +1022,7 @@ function renderExp(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><textarea class="name-input" data-f="name" rows="1">${escapeHtml(row.name)}</textarea></td>
-      <td class="num"><input type="number" step="0.01" value="${row.amount}" data-f="amount"></td>
+      <td class="num"><div class="amt-wrap"><span class="amt-prefix">$</span><input type="number" step="0.01" value="${row.amount}" data-f="amount"></div></td>
       <td><button class="rmv" data-rm="1">×</button></td>
     `;
     tr.querySelectorAll('[data-f]').forEach(el=>{
@@ -864,6 +1033,8 @@ function renderExp(){
         if(field==='name') autoGrow(el);
         onExpChanged();
       });
+      if(field==='amount') el.addEventListener('blur', ()=> { el.value = row.amount.toFixed(2); });
+      if(field==='name') el.addEventListener('focus', ()=>{ if(el.value === DEFAULT_NAME_EXP) el.select(); });
     });
     tr.querySelector('[data-rm]').addEventListener('click', ()=>{
       data.exp = data.exp.filter(r=>r.id!==row.id);
@@ -874,20 +1045,63 @@ function renderExp(){
   });
   body.querySelectorAll('textarea.name-input').forEach(autoGrow);
   document.getElementById('expTotal').textContent = money(computeExpTotal());
+  applyMobileLabels('expBody');
+}
+
+function computeSavFinishes(){
+  const finishes = [];
+  let prevFinish = null;
+  data.sav.forEach((row,i)=>{
+    if(i>0 && prevFinish!==null) row.start = prevFinish;
+    const finish = Math.round((row.start + row.income - row.out)*100)/100;
+    finishes.push(finish);
+    prevFinish = finish;
+  });
+  return finishes;
+}
+
+function updateSavDisplays(){
+  const finishes = computeSavFinishes();
+  const body = document.getElementById('savBody');
+  data.sav.forEach((row,i)=>{
+    const tr = body.querySelector(`tr[data-rowid="${row.id}"]`);
+    if(!tr) return;
+    const startEl = tr.querySelector('[data-role="start-display"]');
+    if(startEl) startEl.textContent = money(row.start);
+    const finishEl = tr.querySelector('[data-role="finish-display"]');
+    if(finishEl){
+      const finish = finishes[i];
+      finishEl.textContent = (finish > row.start ? '↑ ' : finish < row.start ? '↓ ' : '') + money(finish);
+      finishEl.classList.toggle('gain', finish > row.start);
+      finishEl.classList.toggle('loss', finish < row.start);
+      finishEl.classList.toggle('neg', finish<0);
+    }
+  });
 }
 
 function renderSav(){
+  const finishes = computeSavFinishes();
   const body = document.getElementById('savBody');
   body.innerHTML = '';
-  data.sav.forEach(row=>{
-    const finish = row.start + row.income - row.out;
+  data.sav.forEach((row,i)=>{
+    const finish = finishes[i];
     const tr = document.createElement('tr');
+    tr.dataset.rowid = row.id;
+    const startCell = i===0
+      ? `<div class="amt-wrap"><span class="amt-prefix">$</span><input type="number" step="0.01" value="${row.start}" data-f="start"></div>`
+      : `<span class="dim" data-role="start-display" title="carries over from last month's Finish">${money(row.start)}</span>`;
     tr.innerHTML = `
       <td><input type="text" value="${escapeHtml(row.month)}" data-f="month"></td>
-      <td class="num"><input type="number" step="0.01" value="${row.start}" data-f="start"></td>
-      <td class="num"><input type="number" step="0.01" value="${row.income}" data-f="income"></td>
-      <td class="num"><input type="number" step="0.01" value="${row.out}" data-f="out"></td>
-      <td class="num savings-finish ${finish<0?'neg':''}">${money(finish)}</td>
+      <td class="num">${startCell}</td>
+      <td class="num">
+        <div class="amt-wrap"><span class="amt-prefix">$</span><input type="number" step="0.01" value="${row.income}" data-f="income"></div>
+        <input type="number" class="quick-add" placeholder="+" data-role="quickadd-income" title="type an amount and hit Enter to add it in">
+      </td>
+      <td class="num">
+        <div class="amt-wrap"><span class="amt-prefix">$</span><input type="number" step="0.01" value="${row.out}" data-f="out"></div>
+        <input type="number" class="quick-add" placeholder="+" data-role="quickadd-out" title="type an amount and hit Enter to add it in">
+      </td>
+      <td class="num savings-finish ${finish<0?'neg':''} ${finish>row.start?'gain':finish<row.start?'loss':''}" data-role="finish-display">${(finish>row.start?'↑ ':finish<row.start?'↓ ':'')+money(finish)}</td>
       <td><button class="rmv" data-rm="1">×</button></td>
     `;
     tr.querySelectorAll('[data-f]').forEach(el=>{
@@ -895,7 +1109,27 @@ function renderSav(){
       el.addEventListener('input', ()=>{
         if(field==='month') row.month = el.value;
         else row[field] = parseFloat(el.value)||0;
-        renderSav(); queueSave();
+        updateSavDisplays();
+        queueSave();
+      });
+      if(field==='start' || field==='income' || field==='out'){
+        el.addEventListener('blur', ()=> { el.value = row[field].toFixed(2); });
+      }
+    });
+    tr.querySelectorAll('[data-role^="quickadd"]').forEach(el=>{
+      el.addEventListener('keydown', (e)=>{
+        if(e.key !== 'Enter') return;
+        e.preventDefault();
+        const add = parseFloat(el.value);
+        if(!isNaN(add)){
+          const targetField = el.dataset.role === 'quickadd-income' ? 'income' : 'out';
+          row[targetField] = Math.round((row[targetField] + add) * 100) / 100;
+          const mainInput = tr.querySelector(`input[data-f="${targetField}"]`);
+          if(mainInput) mainInput.value = row[targetField].toFixed(2);
+          el.value = '';
+          updateSavDisplays();
+          queueSave();
+        }
       });
     });
     tr.querySelector('[data-rm]').addEventListener('click', ()=>{
@@ -904,6 +1138,7 @@ function renderSav(){
     });
     body.appendChild(tr);
   });
+  applyMobileLabels('savBody');
 }
 
 function renderBalance(){
@@ -968,13 +1203,18 @@ function escapeHtml(s){
 }
 
 document.getElementById('addPay').addEventListener('click', ()=>{
-  data.pay.push({id:uid(), name:'New item', type:'bill', dueDate: todayISO(), amount:0, paycheckId: (incomeRows()[0]||{}).id || '', method:'direct', paid:false, groupId:null, payUrl:''});
+  const newId = uid();
+  data.pay.push({id:newId, name:DEFAULT_NAME_PAY, type:'bill', dueDate: todayISO(), amount:0, paycheckId: (incomeRows()[0]||{}).id || '', method:'direct', paid:false, groupId:null, payUrl:''});
   renderPay(); renderHero(); renderBalance(); queueSave();
+  const el = document.querySelector(`#payBody tr[data-rowid="${newId}"] textarea[data-f="name"]`);
+  if(el) el.focus();
 });
 document.getElementById('addExp').addEventListener('click', ()=>{
-  data.exp.push({id:uid(), name:'New subscription', amount:0});
+  data.exp.push({id:uid(), name:DEFAULT_NAME_EXP, amount:0});
   renderExp();
   onExpChanged();
+  const el = document.querySelector('#expBody textarea[data-f="name"]');
+  if(el){ const list = document.querySelectorAll('#expBody textarea[data-f="name"]'); list[list.length-1].focus(); }
 });
 document.getElementById('addSav').addEventListener('click', ()=>{
   const last = data.sav[data.sav.length-1];
