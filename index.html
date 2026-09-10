@@ -241,6 +241,8 @@ tr.split-row td.name{padding-left:8px;}
 }
 .linkbtn:hover{border-color:var(--brass);color:var(--brass);}
 .linkbtn.ghost{opacity:0.55;}
+.date-display{cursor:pointer;border-bottom:1px dotted var(--paper-line);}
+.date-display:hover{color:var(--brass);border-bottom-color:var(--brass);}
 .linkbtn.ghost:hover{opacity:1;}
 tfoot td{
   border-top:1.5px solid var(--ink);
@@ -499,6 +501,7 @@ const isoDate = d => d.toISOString().slice(0,10);
 let data = null;
 let saveTimer = null;
 let editingLinkIds = new Set();
+let editingDateIds = new Set();
 
 function defaultData(){
   const now = new Date();
@@ -688,7 +691,9 @@ function renderPay(){
     } else {
       paycheckCell = '<span class="dim">—</span>';
       methodCell = '<span class="dim">—</span>';
-      payDateCell = `<input type="date" value="${row.date}" data-f="date">`;
+      payDateCell = editingDateIds.has(row.id)
+        ? `<input type="date" value="${row.date}" data-f="date" data-editing-date="1">`
+        : `<span class="dim date-display" data-editdate="1">${shortDate(row.date)}</span>`;
       nameCell = `<input type="text" value="${escapeHtml(row.name)}" data-f="name">`;
     }
 
@@ -720,12 +725,20 @@ function renderPay(){
         renderHero(); renderBalance(); queueSave();
       });
       if(field==='payUrl') el.addEventListener('blur', ()=> { editingLinkIds.delete(row.id); renderPay(); });
+      if(el.dataset.editingDate) el.addEventListener('blur', ()=> { editingDateIds.delete(row.id); renderPay(); });
     });
     const linkBtn = tr.querySelector('[data-editlink]');
     if(linkBtn) linkBtn.addEventListener('click', ()=>{
       editingLinkIds.add(row.id);
       renderPay();
       const input = body.querySelector(`tr[data-rowid="${row.id}"] input[data-f="payUrl"]`);
+      if(input) input.focus();
+    });
+    const dateDisplay = tr.querySelector('[data-editdate]');
+    if(dateDisplay) dateDisplay.addEventListener('click', ()=>{
+      editingDateIds.add(row.id);
+      renderPay();
+      const input = body.querySelector(`tr[data-rowid="${row.id}"] input[data-f="date"]`);
       if(input) input.focus();
     });
     const spBtn = tr.querySelector('[data-sp]');
