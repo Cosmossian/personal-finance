@@ -310,15 +310,42 @@ tfoot td{
   background:var(--paper);
   color:var(--ink);
   border:1px solid var(--pine);
-  border-radius:3px;
-  padding:8px;
+  border-radius:4px;
+  padding:10px;
   display:flex;
-  gap:6px;
-  align-items:center;
+  flex-direction:column;
+  gap:7px;
+  width:210px;
   box-shadow:0 6px 18px rgba(0,0,0,0.18);
 }
+.qa-header{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+}
+.qa-list{display:flex;flex-direction:column;gap:3px;max-height:110px;overflow-y:auto;}
+.qa-entry{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+  padding:3px 5px;
+  background:rgba(0,0,0,0.03);
+  border-radius:2px;
+}
+.qa-entry button{
+  background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:0 2px;
+}
+.qa-entry button:hover{color:var(--brick);}
+.qa-total{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
+  display:flex;justify-content:space-between;
+  border-top:1px solid var(--paper-line);
+  padding-top:6px;
+}
+.qa-input-row{display:flex;gap:5px;}
 .quick-add-popover input{
-  width:90px;
+  flex:1;
   font-family:'IBM Plex Mono',monospace;
   font-size:13px;
   padding:6px 7px;
@@ -329,17 +356,32 @@ tfoot td{
 }
 .quick-add-popover input::placeholder{color:var(--ink-soft);}
 .quick-add-popover input:focus{outline:none;border-color:var(--brass);}
-.quick-add-popover button{
-  background:var(--brass);
-  color:#2a1f0e;
-  border:none;
-  font-family:'Fraunces',serif;
-  font-weight:600;
-  font-size:12.5px;
-  padding:6px 12px;
+#quickAddEnter{
+  background:none;
+  border:1px solid var(--brass);
+  color:var(--brass);
   border-radius:2px;
+  width:30px;
+  flex:0 0 30px;
+  font-size:14px;
   cursor:pointer;
 }
+#quickAddEnter:hover{background:var(--brass);color:var(--paper);}
+.qa-actions{display:flex;gap:6px;}
+.qa-actions button{
+  flex:1;
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:12px;
+  padding:7px 0;
+  border-radius:2px;
+  cursor:pointer;
+  border:none;
+}
+#quickAddConfirm{background:var(--brass);color:#2a1f0e;}
+#quickAddConfirm:hover{background:#bd8a3c;}
+.qa-cancel{background:none !important;border:1px solid var(--paper-line) !important;color:var(--ink-soft);}
+.qa-cancel:hover{border-color:var(--ink-soft) !important;color:var(--ink);}
 
 .balance-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--paper-line);}
 .balance-name{flex:0 0 150px;font-size:13px;}
@@ -598,8 +640,17 @@ tfoot td{
 </div>
 <div class="saved-flash" id="savedFlash">saved</div>
 <div class="quick-add-popover" id="quickAddPopover" style="display:none;">
-  <input type="number" id="quickAddInput" step="0.01" placeholder="amount">
-  <button id="quickAddConfirm" type="button">Add</button>
+  <div class="qa-header">adding to <span id="qaFieldLabel"></span></div>
+  <div class="qa-list" id="qaList"></div>
+  <div class="qa-total">total<span id="qaTotal">0.00</span></div>
+  <div class="qa-input-row">
+    <input type="number" id="quickAddInput" step="0.01" placeholder="amount">
+    <button id="quickAddEnter" type="button" title="add to list">+</button>
+  </div>
+  <div class="qa-actions">
+    <button id="quickAddConfirm" type="button">Add all</button>
+    <button id="quickAddCancel" type="button" class="qa-cancel">Cancel</button>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
@@ -1096,17 +1147,21 @@ function renderExp(){
 let quickAddContext = null;
 
 function openQuickAdd(btn, row, field){
-  quickAddContext = {row, field};
+  quickAddContext = {row, field, entries: []};
+  document.getElementById('qaFieldLabel').textContent = field === 'income' ? 'In' : 'Out';
   const pop = document.getElementById('quickAddPopover');
   const rect = btn.getBoundingClientRect();
   pop.style.display = 'flex';
-  const popWidth = 190;
-  let left = rect.left - 20;
+  const popWidth = 210, popHeightGuess = 260;
+  let left = rect.left - 30;
   left = Math.max(8, Math.min(left, window.innerWidth - popWidth - 8));
+  let top = rect.bottom + 6;
+  top = Math.max(8, Math.min(top, window.innerHeight - popHeightGuess - 8));
   pop.style.left = left + 'px';
-  pop.style.top = (rect.bottom + 6) + 'px';
+  pop.style.top = top + 'px';
   const input = document.getElementById('quickAddInput');
   input.value = '';
+  renderQaList();
   setTimeout(()=> input.focus(), 0);
 }
 
@@ -1115,13 +1170,42 @@ function closeQuickAdd(){
   quickAddContext = null;
 }
 
-function confirmQuickAdd(){
+function renderQaList(){
+  const list = document.getElementById('qaList');
+  const totalEl = document.getElementById('qaTotal');
+  if(!quickAddContext){ list.innerHTML = ''; totalEl.textContent = '0.00'; return; }
+  list.innerHTML = quickAddContext.entries.map((v,i)=>
+    `<div class="qa-entry"><span>${v.toFixed(2)}</span><button type="button" data-idx="${i}">×</button></div>`
+  ).join('');
+  const total = quickAddContext.entries.reduce((s,v)=>s+v, 0);
+  totalEl.textContent = total.toFixed(2);
+  list.querySelectorAll('button[data-idx]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      quickAddContext.entries.splice(parseInt(b.dataset.idx), 1);
+      renderQaList();
+    });
+  });
+}
+
+function addPendingInputToEntries(){
   if(!quickAddContext) return;
   const input = document.getElementById('quickAddInput');
-  const add = parseFloat(input.value);
-  if(!isNaN(add)){
+  const v = parseFloat(input.value);
+  if(!isNaN(v) && v !== 0){
+    quickAddContext.entries.push(v);
+    input.value = '';
+  }
+  renderQaList();
+  input.focus();
+}
+
+function confirmQuickAdd(){
+  if(!quickAddContext) return;
+  addPendingInputToEntries();
+  const total = quickAddContext.entries.reduce((s,v)=>s+v, 0);
+  if(total !== 0){
     const {row, field} = quickAddContext;
-    row[field] = Math.round((row[field] + add) * 100) / 100;
+    row[field] = Math.round((row[field] + total) * 100) / 100;
     const mainInput = document.querySelector(`#savBody tr[data-rowid="${row.id}"] input[data-f="${field}"]`);
     if(mainInput) mainInput.value = row[field].toFixed(2);
     updateSavDisplays();
@@ -1131,8 +1215,10 @@ function confirmQuickAdd(){
 }
 
 document.getElementById('quickAddConfirm').addEventListener('click', confirmQuickAdd);
+document.getElementById('quickAddCancel').addEventListener('click', closeQuickAdd);
+document.getElementById('quickAddEnter').addEventListener('click', addPendingInputToEntries);
 document.getElementById('quickAddInput').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter'){ e.preventDefault(); confirmQuickAdd(); }
+  if(e.key === 'Enter'){ e.preventDefault(); addPendingInputToEntries(); }
   if(e.key === 'Escape'){ closeQuickAdd(); }
 });
 document.addEventListener('click', (e)=>{
@@ -1189,14 +1275,14 @@ function renderSav(){
       <td class="num">${startCell}</td>
       <td class="num">
         <div class="amt-wrap">
-          <button type="button" class="quick-add-btn" data-role="quickadd-income" title="add an amount">+</button>
           <input type="number" step="0.01" value="${row.income.toFixed(2)}" data-f="income">
+          <button type="button" class="quick-add-btn" data-role="quickadd-income" title="add amounts to In">+</button>
         </div>
       </td>
       <td class="num">
         <div class="amt-wrap">
-          <button type="button" class="quick-add-btn" data-role="quickadd-out" title="add an amount">+</button>
           <input type="number" step="0.01" value="${row.out.toFixed(2)}" data-f="out">
+          <button type="button" class="quick-add-btn" data-role="quickadd-out" title="add amounts to Out">+</button>
         </div>
       </td>
       <td class="num savings-finish ${finish<0?'neg':''} ${finish>row.start?'gain':finish<row.start?'loss':''}" data-role="finish-display">${(finish>row.start?'↑ ':finish<row.start?'↓ ':'')+numFmt(finish)}</td>
