@@ -1475,7 +1475,7 @@ function renderPlanning(){
   intro.style.display = 'none';
   body.style.display = '';
 
-  const {next, billsTotal, leftover, toCredit, toSavings, credits} = planning;
+  const {next, income, billsTotal, leftover, toCredit, toSavings, credits} = planning;
 
   // pie: Bills / Savings(extra) / Credit(extra), as a share of this paycheck
   const pieTotal = billsTotal + toSavings + toCredit || 1;
