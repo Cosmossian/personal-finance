@@ -230,12 +230,18 @@ select{
 }
 select.method-direct{color:var(--paid);border-color:var(--paid);}
 select.method-savings{color:var(--brass);border-color:var(--brass);}
+select.method-credit{color:var(--brick);border-color:var(--brick);}
+.debt-row{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.debt-row .dim{font-size:10px;text-transform:uppercase;letter-spacing:0.03em;}
+.amt-wrap.small{width:80px;}
+.amt-wrap.small input{font-size:12px;padding:2px 4px;border:1px solid var(--brick);border-radius:2px;}
 .chk{width:16px;height:16px;accent-color:var(--paid);cursor:pointer;}
 .rmv{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:14px;padding:0 4px;opacity:0.5;}
 .rmv:hover{opacity:1;color:var(--brick);}
 .split{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:0 4px;opacity:0.55;}
 .split:hover{opacity:1;color:var(--brass);}
 .dim{color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:11px;}
+.synced-amount{color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
 tr.split-row td{border-left:2px solid var(--brass);}
 tr.split-row td.name{padding-left:8px;}
 .split-tag{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--brass);margin-top:1px;}
@@ -272,7 +278,7 @@ tr.split-row td.name{padding-left:8px;}
 .linkbtn:hover{border-color:var(--brass);color:var(--brass);}
 .linkbtn.ghost{opacity:0.55;}
 .date-display{cursor:pointer;border-bottom:1px dotted var(--paper-line);}
-.derived-val{color:var(--ink);border-bottom:1px dotted var(--paper-line);}
+.derived-val{color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-bottom:1px dotted var(--paper-line);}
 .date-display:hover{color:var(--brass);border-bottom-color:var(--brass);}
 .linkbtn.ghost:hover{opacity:1;}
 tfoot td{
@@ -304,19 +310,27 @@ tfoot td{
   justify-content:center;
 }
 .quick-add-btn:hover{background:var(--brass);color:var(--paper);}
+.qa-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(32,38,28,0.35);
+  z-index:199;
+}
 .quick-add-popover{
   position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
   z-index:200;
   background:var(--paper);
   color:var(--ink);
   border:1px solid var(--pine);
   border-radius:4px;
-  padding:10px;
+  padding:14px;
   display:flex;
   flex-direction:column;
-  gap:7px;
-  width:210px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.18);
+  gap:8px;
+  width:min(85vw, 240px);
+  box-shadow:0 10px 28px rgba(0,0,0,0.3);
 }
 .qa-header{
   font-family:'IBM Plex Mono',monospace;
@@ -392,6 +406,26 @@ tfoot td{
 .balance-amt{flex:0 0 84px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;}
 .balance-amt.neg{color:var(--brick);}
 
+.planning-top{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-bottom:18px;}
+.pie-wrap{display:flex;align-items:center;gap:16px;flex:0 0 auto;}
+.pie{width:120px;height:120px;border-radius:50%;flex-shrink:0;}
+.pie-legend{display:flex;flex-direction:column;gap:6px;}
+.pie-legend-row{display:flex;align-items:center;gap:7px;font-size:12.5px;}
+.pie-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.pie-legend-row b{font-family:'IBM Plex Mono',monospace;margin-left:auto;padding-left:14px;}
+.planning-reco{
+  flex:1 1 240px;
+  background:var(--pine);
+  color:var(--paper);
+  border-radius:2px;
+  padding:16px 18px;
+  font-size:13.5px;
+  line-height:1.55;
+}
+.planning-reco b{color:var(--brass);}
+.planning-reco .reco-amt{font-family:'Fraunces',serif;font-size:19px;font-weight:600;display:block;margin:8px 0 2px;}
+.planning-note{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);margin-top:12px;line-height:1.5;}
+#payoffBody td:nth-child(2),#payoffBody td:nth-child(3){text-align:right;font-family:'IBM Plex Mono',monospace;}
 .foot-note{text-align:center;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:36px;}
 .saved-flash{
   position:fixed;bottom:18px;right:18px;
@@ -547,12 +581,12 @@ tfoot td{
   </div>
 
   <div class="hero">
-    <div class="label">money left this cycle</div>
+    <div class="label">available right now</div>
     <div class="amount" id="heroAmount">$0.00</div>
     <div class="hero-row">
       <div class="hero-stat">income<b id="statIncome">$0</b></div>
-      <div class="hero-stat">bills + subscriptions<b id="statBills">$0</b></div>
-      <div class="hero-stat">unpaid right now<b id="statUnpaid">$0</b></div>
+      <div class="hero-stat">paid so far<b id="statBills">$0</b></div>
+      <div class="hero-stat">still to pay<b id="statUnpaid">$0</b></div>
     </div>
   </div>
 
@@ -636,9 +670,35 @@ tfoot td{
     </div>
   </div>
 
+  <div class="panel" id="planningPanel">
+    <div class="panel-head">
+      <h2>Payment Planning</h2>
+    </div>
+    <div class="panel-sub" id="planningIntro">tag a bill's "pay from" as <b>credit</b> and give it a balance to see a payoff plan here</div>
+    <div id="planningBody" style="display:none;">
+      <div class="planning-top">
+        <div class="pie-wrap">
+          <div class="pie" id="planningPie"></div>
+          <div class="pie-legend" id="planningLegend"></div>
+        </div>
+        <div class="planning-reco" id="planningReco"></div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Debt</th><th>Paid off around</th><th>Monthly cash freed up</th></tr>
+          </thead>
+          <tbody id="payoffBody"></tbody>
+        </table>
+      </div>
+      <div class="planning-note">order follows the "snowball" method — smallest balance first — since it needs no interest-rate info and frees up monthly cash the fastest. As each debt clears, its payment rolls into the next one.</div>
+    </div>
+  </div>
+
   <div class="foot-note">your data syncs to your account and recalculates as you type</div>
 </div>
 <div class="saved-flash" id="savedFlash">saved</div>
+<div class="qa-backdrop" id="qaBackdrop" style="display:none;"></div>
 <div class="quick-add-popover" id="quickAddPopover" style="display:none;">
   <div class="qa-header">adding to <span id="qaFieldLabel"></span></div>
   <div class="qa-list" id="qaList"></div>
@@ -772,6 +832,7 @@ function loadFromCloud(){
       if(r.type==='bill' && !r.method) r.method='direct';
       if(r.type==='bill' && r.groupId===undefined) r.groupId = null;
       if(r.type==='bill' && r.payUrl===undefined) r.payUrl = '';
+      if(r.type==='bill' && r.debtBalance===undefined) r.debtBalance = 0;
     });
     render();
     updateUndoButtonState();
@@ -895,6 +956,7 @@ function onExpChanged(){
   renderPay();
   renderHero();
   renderBalance();
+  renderPlanning();
   queueSave();
 }
 
@@ -919,6 +981,7 @@ function render(){
   renderSav();
   renderHero();
   renderBalance();
+  renderPlanning();
 }
 
 function incomeRows(){ return data.pay.filter(r=>r.type==='income').sort((a,b)=>a.date.localeCompare(b.date)); }
@@ -956,6 +1019,7 @@ function renderPay(){
       methodCell = `<select data-f="method" class="method-${row.method}">
           <option value="direct" ${row.method==='direct'?'selected':''}>pay directly</option>
           <option value="savings" ${row.method==='savings'?'selected':''}>into savings</option>
+          <option value="credit" ${row.method==='credit'?'selected':''}>credit</option>
         </select>`;
       const linkedPaycheck = incomes.find(inc=>inc.id===row.paycheckId);
       payDateCell = linkedPaycheck ? `<span class="dim">${shortDate(linkedPaycheck.date)}</span>` : '<span class="dim">—</span>';
@@ -978,7 +1042,11 @@ function renderPay(){
       } else {
         paylinkArea = `<div class="paylink-row"><button class="linkbtn ghost" data-editlink="1">+ link</button></div>`;
       }
-      nameCell = `<textarea class="name-input" data-f="name" rows="1">${escapeHtml(row.name)}</textarea>${tag}${paylinkArea}`;
+      let debtArea = '';
+      if(row.method === 'credit'){
+        debtArea = `<div class="debt-row"><span class="dim">balance</span><div class="amt-wrap small"><input type="number" step="0.01" value="${(row.debtBalance||0).toFixed(2)}" data-f="debtBalance"></div></div>`;
+      }
+      nameCell = `<textarea class="name-input" data-f="name" rows="1">${escapeHtml(row.name)}</textarea>${tag}${paylinkArea}${debtArea}`;
     } else {
       paycheckCell = '<span class="dim">—</span>';
       methodCell = '<span class="dim">—</span>';
@@ -990,7 +1058,7 @@ function renderPay(){
     }
 
     const amountCell = isMonthlyBillsRow
-      ? `<div class="amt-wrap"><span class="dim" title="synced automatically from Monthly Expenditures">${row.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`
+      ? `<div class="amt-wrap"><span class="synced-amount" title="synced automatically from Monthly Expenditures">${row.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`
       : `<div class="amt-wrap"><input type="number" step="0.01" value="${row.amount.toFixed(2)}" data-f="amount"></div>`;
 
     tr.innerHTML = `
@@ -1030,12 +1098,13 @@ function renderPay(){
             row.amount = parseFloat(el.value)||0;
           }
         }
+        else if(field==='debtBalance') row.debtBalance = parseFloat(el.value)||0;
         else row[field] = el.value;
         if(field==='name') autoGrow(el);
-        if(field==='type' || field==='paycheckId'){ renderPay(); } // Pay Date needs to refresh to match the newly picked paycheck
-        if(field==='method'){ el.className = 'method-'+el.value; }
-        renderHero(); renderBalance(); queueSave();
+        if(field==='type' || field==='paycheckId' || field==='method'){ renderPay(); } // method needs to refresh to show/hide the balance field; Pay Date needs to refresh to match the newly picked paycheck
+        renderHero(); renderBalance(); renderPlanning(); queueSave();
       });
+      if(field==='debtBalance') el.addEventListener('blur', ()=> { el.value = (row.debtBalance||0).toFixed(2); });
       if(field==='payUrl') el.addEventListener('blur', ()=> { editingLinkIds.delete(row.id); renderPay(); });
       if(el.dataset.editingDate) el.addEventListener('blur', ()=> { editingDateIds.delete(row.id); renderPay(); });
       if(field==='amount') el.addEventListener('blur', ()=> { el.value = row.amount.toFixed(2); });
@@ -1044,7 +1113,7 @@ function renderPay(){
         el.addEventListener('blur', ()=>{
           // renaming to/from "Monthly Bills" changes whether the amount is editable, so refresh
           syncMonthlyBillsToExpTotal(computeExpTotal());
-          renderPay(); renderHero(); renderBalance(); queueSave();
+          renderPay(); renderHero(); renderBalance(); renderPlanning(); queueSave();
         });
       }
     });
@@ -1070,7 +1139,7 @@ function renderPay(){
       const amt = row.amount;
       data.pay = data.pay.filter(r=>r.id!==row.id);
       cleanupGroup(gid, amt);
-      renderPay(); renderHero(); renderBalance(); queueSave();
+      renderPay(); renderHero(); renderBalance(); renderPlanning(); queueSave();
     });
     body.appendChild(tr);
   });
@@ -1103,11 +1172,11 @@ function splitBill(rowId){
     id:uid(), name:row.name, type:'bill',
     dueDate: row.dueDate, amount:remainder,
     paycheckId: otherPaycheck ? otherPaycheck.id : row.paycheckId,
-    method:row.method, paid:false, groupId:row.groupId, payUrl:row.payUrl||''
+    method:row.method, paid:false, groupId:row.groupId, payUrl:row.payUrl||'', debtBalance:row.debtBalance||0
   };
   const idx = data.pay.findIndex(r=>r.id===rowId);
   data.pay.splice(idx+1, 0, clone);
-  renderPay(); renderHero(); renderBalance(); queueSave();
+  renderPay(); renderHero(); renderBalance(); renderPlanning(); queueSave();
 }
 
 function renderExp(){
@@ -1149,16 +1218,9 @@ let quickAddContext = null;
 function openQuickAdd(btn, row, field){
   quickAddContext = {row, field, entries: []};
   document.getElementById('qaFieldLabel').textContent = field === 'income' ? 'In' : 'Out';
+  document.getElementById('qaBackdrop').style.display = 'block';
   const pop = document.getElementById('quickAddPopover');
-  const rect = btn.getBoundingClientRect();
   pop.style.display = 'flex';
-  const popWidth = 210, popHeightGuess = 260;
-  let left = rect.left - 30;
-  left = Math.max(8, Math.min(left, window.innerWidth - popWidth - 8));
-  let top = rect.bottom + 6;
-  top = Math.max(8, Math.min(top, window.innerHeight - popHeightGuess - 8));
-  pop.style.left = left + 'px';
-  pop.style.top = top + 'px';
   const input = document.getElementById('quickAddInput');
   input.value = '';
   renderQaList();
@@ -1167,6 +1229,7 @@ function openQuickAdd(btn, row, field){
 
 function closeQuickAdd(){
   document.getElementById('quickAddPopover').style.display = 'none';
+  document.getElementById('qaBackdrop').style.display = 'none';
   quickAddContext = null;
 }
 
@@ -1336,6 +1399,117 @@ function renderBalance(){
   }).join('');
 }
 
+function getNextPaycheck(){
+  const incomes = incomeRows();
+  if(incomes.length===0) return null;
+  const todayStr = todayISO();
+  const upcoming = incomes.filter(i=>i.date >= todayStr);
+  return upcoming[0] || incomes[incomes.length-1];
+}
+
+function getCreditRows(){
+  return data.pay.filter(r=>r.type==='bill' && r.method==='credit' && (r.debtBalance||0) > 0);
+}
+
+function computePlanning(){
+  const next = getNextPaycheck();
+  if(!next) return null;
+  const billsTotal = data.pay.filter(r=>r.type==='bill' && r.paycheckId===next.id).reduce((s,r)=>s+r.amount, 0);
+  const leftover = Math.round((next.amount - billsTotal) * 100) / 100;
+  const credits = getCreditRows().slice().sort((a,b)=>(a.debtBalance)-(b.debtBalance));
+  let toCredit = 0, toSavings = 0;
+  if(leftover > 0){
+    if(credits.length > 0){
+      const priority = credits[0];
+      if(priority.debtBalance <= leftover){
+        toCredit = priority.debtBalance;
+      } else {
+        toCredit = Math.round(leftover * 0.5 * 100) / 100;
+      }
+      toSavings = Math.round((leftover - toCredit) * 100) / 100;
+    } else {
+      toSavings = leftover;
+    }
+  }
+  return {next, billsTotal, leftover, toCredit, toSavings, credits};
+}
+
+function simulatePayoff(credits, extraMonthly, startDate){
+  const sim = credits.map(c=>({name:c.name, balance:c.debtBalance, payment:c.amount}));
+  let freed = 0;
+  let month = 0;
+  const results = [];
+  while(sim.length > 0 && month < 480){
+    month++;
+    sim.forEach((d,i)=>{
+      const pay = d.payment + (i===0 ? extraMonthly + freed : 0);
+      d.balance = Math.round((d.balance - pay) * 100) / 100;
+    });
+    for(let i=sim.length-1; i>=0; i--){
+      if(sim[i].balance <= 0){
+        const paidOff = sim.splice(i,1)[0];
+        freed += paidOff.payment;
+        const payoffDate = new Date(startDate);
+        payoffDate.setMonth(payoffDate.getMonth() + month);
+        results.push({name:paidOff.name, months:month, date:payoffDate, freedUp:paidOff.payment});
+      }
+    }
+  }
+  results.sort((a,b)=>a.months-b.months);
+  return results;
+}
+
+function renderPlanning(){
+  const intro = document.getElementById('planningIntro');
+  const body = document.getElementById('planningBody');
+  const planning = computePlanning();
+  if(!planning || planning.credits.length === 0){
+    intro.style.display = '';
+    body.style.display = 'none';
+    return;
+  }
+  intro.style.display = 'none';
+  body.style.display = '';
+
+  const {next, billsTotal, leftover, toCredit, toSavings, credits} = planning;
+
+  // pie: Bills / Savings(extra) / Credit(extra), as a share of this paycheck
+  const pieTotal = billsTotal + toSavings + toCredit || 1;
+  const p1 = billsTotal/pieTotal*100;
+  const p2 = p1 + toSavings/pieTotal*100;
+  document.getElementById('planningPie').style.background =
+    `conic-gradient(var(--pine) 0% ${p1}%, var(--brass) ${p1}% ${p2}%, var(--brick) ${p2}% 100%)`;
+  document.getElementById('planningLegend').innerHTML = `
+    <div class="pie-legend-row"><span class="pie-swatch" style="background:var(--pine)"></span>Bills<b>${money(billsTotal)}</b></div>
+    <div class="pie-legend-row"><span class="pie-swatch" style="background:var(--brass)"></span>Savings<b>${money(toSavings)}</b></div>
+    <div class="pie-legend-row"><span class="pie-swatch" style="background:var(--brick)"></span>Credit<b>${money(toCredit)}</b></div>
+  `;
+
+  const priority = credits[0];
+  const payoffNote = priority.debtBalance <= leftover
+    ? `That's enough to pay off <b>${escapeHtml(priority.name)}</b> completely this cycle.`
+    : `Priority target: <b>${escapeHtml(priority.name)}</b> (smallest balance, $${priority.debtBalance.toFixed(2)} left).`;
+
+  document.getElementById('planningReco').innerHTML = `
+    Next paycheck: <b>${escapeHtml(next.name)}</b> on ${shortDate(next.date)} for ${money(next.amount)}.
+    After ${money(billsTotal)} in assigned bills, you've got
+    <span class="reco-amt">${money(leftover)} walking-around money</span>
+    ${payoffNote}
+    <br><br>
+    Recommended split: <b>${money(toSavings)} → Savings</b>, <b>${money(toCredit)} → ${escapeHtml(priority.name)}</b>.
+  `;
+
+  const results = simulatePayoff(credits, toCredit, new Date(next.date+'T00:00:00'));
+  document.getElementById('payoffBody').innerHTML = results.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${r.date.toLocaleDateString(undefined,{month:'short',year:'numeric'})}</td>
+      <td>${money(r.freedUp)}</td>
+    </tr>
+  `).join('');
+  applyMobileLabels('payoffBody');
+}
+
 function balanceEvenly(){
   const incomes = incomeRows();
   if(incomes.length===0) return;
@@ -1357,20 +1531,23 @@ function balanceEvenly(){
     bill.paycheckId = best.id;
     running[best.id] += bill.amount;
   });
-  renderPay(); renderBalance(); queueSave();
+  renderPay(); renderBalance(); renderPlanning(); queueSave();
 }
 
 function renderHero(){
   const income = data.pay.filter(r=>r.type==='income').reduce((s,r)=>s+r.amount,0);
-  const bills = data.pay.filter(r=>r.type==='bill').reduce((s,r)=>s+r.amount,0) + data.exp.reduce((s,r)=>s+r.amount,0);
-  const unpaid = data.pay.filter(r=>r.type==='bill' && !r.paid).reduce((s,r)=>s+r.amount,0);
-  const left = income - bills;
+  const paidBills = data.pay.filter(r=>r.type==='bill' && r.paid).reduce((s,r)=>s+r.amount,0);
+  const unpaidBills = data.pay.filter(r=>r.type==='bill' && !r.paid).reduce((s,r)=>s+r.amount,0);
+  const expTotal = computeExpTotal();
+  // live figure: only money that's actually gone out the door (paid bills + subscriptions)
+  // counts against what's available — unpaid bills don't reduce it until you check them off
+  const left = income - paidBills - expTotal;
   const amt = document.getElementById('heroAmount');
   amt.textContent = money(left);
   amt.classList.toggle('neg', left<0);
   document.getElementById('statIncome').textContent = money(income);
-  document.getElementById('statBills').textContent = money(bills);
-  document.getElementById('statUnpaid').textContent = money(unpaid);
+  document.getElementById('statBills').textContent = money(paidBills + expTotal);
+  document.getElementById('statUnpaid').textContent = money(unpaidBills);
   return left;
 }
 
@@ -1380,8 +1557,8 @@ function escapeHtml(s){
 
 document.getElementById('addPay').addEventListener('click', ()=>{
   const newId = uid();
-  data.pay.push({id:newId, name:DEFAULT_NAME_PAY, type:'bill', dueDate: todayISO(), amount:0, paycheckId: (incomeRows()[0]||{}).id || '', method:'direct', paid:false, groupId:null, payUrl:''});
-  renderPay(); renderHero(); renderBalance(); queueSave();
+  data.pay.push({id:newId, name:DEFAULT_NAME_PAY, type:'bill', dueDate: todayISO(), amount:0, paycheckId: (incomeRows()[0]||{}).id || '', method:'direct', paid:false, groupId:null, payUrl:'', debtBalance:0});
+  renderPay(); renderHero(); renderBalance(); renderPlanning(); queueSave();
   const el = document.querySelector(`#payBody tr[data-rowid="${newId}"] textarea[data-f="name"]`);
   if(el) el.focus();
 });
