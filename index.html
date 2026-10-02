@@ -230,7 +230,6 @@ select{
 }
 select.method-direct{color:var(--paid);border-color:var(--paid);}
 select.method-savings{color:var(--brass);border-color:var(--brass);}
-select.method-credit{color:var(--brick);border-color:var(--brick);}
 .debt-row{display:flex;align-items:center;gap:6px;margin-top:3px;}
 .debt-row .dim{font-size:10px;text-transform:uppercase;letter-spacing:0.03em;}
 .amt-wrap.small{width:80px;}
@@ -615,6 +614,7 @@ tfoot td{
           <th style="width:150px">Paycheck</th>
           <th style="width:120px">Pay from</th>
           <th style="width:40px">Paid</th>
+          <th style="width:48px">Credit</th>
           <th style="width:20px"></th>
         </tr>
       </thead>
@@ -833,6 +833,8 @@ function loadFromCloud(){
       if(r.type==='bill' && r.groupId===undefined) r.groupId = null;
       if(r.type==='bill' && r.payUrl===undefined) r.payUrl = '';
       if(r.type==='bill' && r.debtBalance===undefined) r.debtBalance = 0;
+      if(r.type==='bill' && r.isCredit===undefined) r.isCredit = (r.method==='credit'); // carry over from the old credit-as-method scheme if present
+      if(r.type==='bill' && r.method==='credit') r.method = 'direct'; // "credit" is no longer a Pay From option
     });
     render();
     updateUndoButtonState();
@@ -1019,7 +1021,6 @@ function renderPay(){
       methodCell = `<select data-f="method" class="method-${row.method}">
           <option value="direct" ${row.method==='direct'?'selected':''}>pay directly</option>
           <option value="savings" ${row.method==='savings'?'selected':''}>into savings</option>
-          <option value="credit" ${row.method==='credit'?'selected':''}>credit</option>
         </select>`;
       const linkedPaycheck = incomes.find(inc=>inc.id===row.paycheckId);
       payDateCell = linkedPaycheck ? `<span class="dim">${shortDate(linkedPaycheck.date)}</span>` : '<span class="dim">—</span>';
@@ -1043,7 +1044,7 @@ function renderPay(){
         paylinkArea = `<div class="paylink-row"><button class="linkbtn ghost" data-editlink="1">+ link</button></div>`;
       }
       let debtArea = '';
-      if(row.method === 'credit'){
+      if(row.isCredit){
         debtArea = `<div class="debt-row"><span class="dim">balance</span><div class="amt-wrap small"><input type="number" step="0.01" value="${(row.debtBalance||0).toFixed(2)}" data-f="debtBalance"></div></div>`;
       }
       nameCell = `<textarea class="name-input" data-f="name" rows="1">${escapeHtml(row.name)}</textarea>${tag}${paylinkArea}${debtArea}`;
@@ -1075,13 +1076,15 @@ function renderPay(){
       <td>${paycheckCell}</td>
       <td>${methodCell}</td>
       <td style="text-align:center"><input type="checkbox" class="chk" ${row.paid?'checked':''} data-f="paid"></td>
+      <td style="text-align:center">${isBill ? `<input type="checkbox" class="chk" ${row.isCredit?'checked':''} data-f="isCredit">` : '<span class="dim">—</span>'}</td>
       <td>${isBill ? '<button class="split" data-sp="1" title="split this bill across another paycheck">split</button>' : ''}<button class="rmv" data-rm="1">×</button></td>
     `;
     tr.querySelectorAll('[data-f]').forEach(el=>{
       const field = el.dataset.f;
-      const ev = (el.tagName==='SELECT' || field==='paid') ? 'change' : 'input';
+      const ev = (el.tagName==='SELECT' || field==='paid' || field==='isCredit') ? 'change' : 'input';
       el.addEventListener(ev, ()=>{
         if(field==='paid'){ row.paid = el.checked; tr.classList.toggle('paid', row.paid); }
+        else if(field==='isCredit'){ row.isCredit = el.checked; }
         else if(field==='amount'){
           const siblings = row.groupId ? data.pay.filter(r=>r.type==='bill' && r.groupId===row.groupId) : [];
           if(siblings.length > 1){
@@ -1101,7 +1104,7 @@ function renderPay(){
         else if(field==='debtBalance') row.debtBalance = parseFloat(el.value)||0;
         else row[field] = el.value;
         if(field==='name') autoGrow(el);
-        if(field==='type' || field==='paycheckId' || field==='method'){ renderPay(); } // method needs to refresh to show/hide the balance field; Pay Date needs to refresh to match the newly picked paycheck
+        if(field==='type' || field==='paycheckId' || field==='isCredit'){ renderPay(); } // isCredit needs to refresh to show/hide the balance field; Pay Date needs to refresh to match the newly picked paycheck
         renderHero(); renderBalance(); renderPlanning(); queueSave();
       });
       if(field==='debtBalance') el.addEventListener('blur', ()=> { el.value = (row.debtBalance||0).toFixed(2); });
@@ -1172,7 +1175,7 @@ function splitBill(rowId){
     id:uid(), name:row.name, type:'bill',
     dueDate: row.dueDate, amount:remainder,
     paycheckId: otherPaycheck ? otherPaycheck.id : row.paycheckId,
-    method:row.method, paid:false, groupId:row.groupId, payUrl:row.payUrl||'', debtBalance:row.debtBalance||0
+    method:row.method, paid:false, groupId:row.groupId, payUrl:row.payUrl||'', debtBalance:row.debtBalance||0, isCredit:row.isCredit||false
   };
   const idx = data.pay.findIndex(r=>r.id===rowId);
   data.pay.splice(idx+1, 0, clone);
@@ -1408,14 +1411,15 @@ function getNextPaycheck(){
 }
 
 function getCreditRows(){
-  return data.pay.filter(r=>r.type==='bill' && r.method==='credit' && (r.debtBalance||0) > 0);
+  return data.pay.filter(r=>r.type==='bill' && r.isCredit && (r.debtBalance||0) > 0);
 }
 
 function computePlanning(){
   const next = getNextPaycheck();
   if(!next) return null;
-  const billsTotal = data.pay.filter(r=>r.type==='bill' && r.paycheckId===next.id).reduce((s,r)=>s+r.amount, 0);
-  const leftover = Math.round((next.amount - billsTotal) * 100) / 100;
+  const income = incomeRows().reduce((s,r)=>s+r.amount, 0);
+  const billsTotal = data.pay.filter(r=>r.type==='bill').reduce((s,r)=>s+r.amount, 0);
+  const leftover = Math.round((income - billsTotal) * 100) / 100;
   const credits = getCreditRows().slice().sort((a,b)=>(a.debtBalance)-(b.debtBalance));
   let toCredit = 0, toSavings = 0;
   if(leftover > 0){
@@ -1431,7 +1435,7 @@ function computePlanning(){
       toSavings = leftover;
     }
   }
-  return {next, billsTotal, leftover, toCredit, toSavings, credits};
+  return {next, income, billsTotal, leftover, toCredit, toSavings, credits};
 }
 
 function simulatePayoff(credits, extraMonthly, startDate){
@@ -1491,12 +1495,13 @@ function renderPlanning(){
     : `Priority target: <b>${escapeHtml(priority.name)}</b> (smallest balance, $${priority.debtBalance.toFixed(2)} left).`;
 
   document.getElementById('planningReco').innerHTML = `
-    Next paycheck: <b>${escapeHtml(next.name)}</b> on ${shortDate(next.date)} for ${money(next.amount)}.
-    After ${money(billsTotal)} in assigned bills, you've got
+    This cycle: ${money(income)} in total income against ${money(billsTotal)} in bills leaves you
     <span class="reco-amt">${money(leftover)} walking-around money</span>
     ${payoffNote}
     <br><br>
     Recommended split: <b>${money(toSavings)} → Savings</b>, <b>${money(toCredit)} → ${escapeHtml(priority.name)}</b>.
+    <br><br>
+    <span style="opacity:0.85;font-size:12px;">Good time to actually move it: your next payday, <b>${escapeHtml(next.name)}</b> on ${shortDate(next.date)}.</span>
   `;
 
   const results = simulatePayoff(credits, toCredit, new Date(next.date+'T00:00:00'));
@@ -1557,7 +1562,7 @@ function escapeHtml(s){
 
 document.getElementById('addPay').addEventListener('click', ()=>{
   const newId = uid();
-  data.pay.push({id:newId, name:DEFAULT_NAME_PAY, type:'bill', dueDate: todayISO(), amount:0, paycheckId: (incomeRows()[0]||{}).id || '', method:'direct', paid:false, groupId:null, payUrl:'', debtBalance:0});
+  data.pay.push({id:newId, name:DEFAULT_NAME_PAY, type:'bill', dueDate: todayISO(), amount:0, paycheckId: (incomeRows()[0]||{}).id || '', method:'direct', paid:false, groupId:null, payUrl:'', debtBalance:0, isCredit:false});
   renderPay(); renderHero(); renderBalance(); renderPlanning(); queueSave();
   const el = document.querySelector(`#payBody tr[data-rowid="${newId}"] textarea[data-f="name"]`);
   if(el) el.focus();
