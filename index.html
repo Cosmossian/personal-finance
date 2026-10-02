@@ -1101,7 +1101,16 @@ function renderPay(){
             row.amount = parseFloat(el.value)||0;
           }
         }
-        else if(field==='debtBalance') row.debtBalance = parseFloat(el.value)||0;
+        else if(field==='debtBalance'){
+          row.debtBalance = parseFloat(el.value)||0;
+          if(row.groupId){
+            data.pay.filter(r=>r.type==='bill' && r.groupId===row.groupId && r.id!==row.id).forEach(sib=>{
+              sib.debtBalance = row.debtBalance;
+              const sibInput = body.querySelector(`tr[data-rowid="${sib.id}"] input[data-f="debtBalance"]`);
+              if(sibInput) sibInput.value = row.debtBalance.toFixed(2);
+            });
+          }
+        }
         else row[field] = el.value;
         if(field==='name') autoGrow(el);
         if(field==='type' || field==='paycheckId' || field==='isCredit'){ renderPay(); } // isCredit needs to refresh to show/hide the balance field; Pay Date needs to refresh to match the newly picked paycheck
@@ -1411,7 +1420,19 @@ function getNextPaycheck(){
 }
 
 function getCreditRows(){
-  return data.pay.filter(r=>r.type==='bill' && r.isCredit && (r.debtBalance||0) > 0);
+  const rows = data.pay.filter(r=>r.type==='bill' && r.isCredit && (r.debtBalance||0) > 0);
+  // split bills (same groupId) are the same debt paid in installments — merge into one entry
+  // so the balance isn't double-counted and the monthly payment is the combined total.
+  const grouped = {};
+  rows.forEach(r=>{
+    const key = r.groupId || r.id;
+    if(!grouped[key]){
+      grouped[key] = {name: r.name, debtBalance: r.debtBalance||0, amount: 0};
+    }
+    grouped[key].amount += r.amount;
+    grouped[key].debtBalance = Math.max(grouped[key].debtBalance, r.debtBalance||0);
+  });
+  return Object.values(grouped);
 }
 
 function computePlanning(){
