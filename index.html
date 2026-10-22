@@ -408,7 +408,7 @@ tfoot td{
 .debit-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
 .debit-row label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);}
 .debit-row input{
-  width:190px;
+  width:130px;
   font-family:'IBM Plex Mono',monospace;
   font-size:13px;
   text-align:right;
@@ -693,7 +693,7 @@ tfoot td{
     <div id="planningBody" style="display:none;">
       <div class="debit-row">
         <label for="debitInput">debit left over</label>
-        <input type="number" step="0.01" id="debitInput" placeholder="what's actually in debit right now">
+        <input type="number" step="0.01" id="debitInput" placeholder="0.00">
         <button type="button" class="linkbtn" id="debitReset" title="go back to the calculated figure">use calculated</button>
         <span class="dim" id="debitHint"></span>
       </div>
@@ -1551,7 +1551,7 @@ function renderPlanning(){
   document.getElementById('debitReset').style.display = hasOverride ? '' : 'none';
   document.getElementById('debitHint').textContent = hasOverride
     ? `calculated would be ${numFmt(calcLeftover)}`
-    : `calculated: ${numFmt(calcLeftover)} — type your real debit balance to override`;
+    : `calculated: ${numFmt(calcLeftover)}. Type what's actually in your debit account to override.`;
 
   // pie: Bills / Savings(extra) / Credit(extra), as a share of this paycheck
   const pieTotal = billsTotal + toSavings + toCredit || 1;
