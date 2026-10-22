@@ -405,6 +405,21 @@ tfoot td{
 .balance-amt{flex:0 0 84px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;}
 .balance-amt.neg{color:var(--brick);}
 
+.debit-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.debit-row label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);}
+.debit-row input{
+  width:190px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;
+  text-align:right;
+  padding:6px 8px;
+  border:1px solid var(--paper-line);
+  border-radius:2px;
+  background:transparent;
+  color:var(--ink);
+}
+.debit-row input:focus{outline:none;border-color:var(--brass);}
+.debit-row input.active{border-color:var(--brass);}
 .planning-top{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-bottom:18px;}
 .pie-wrap{display:flex;align-items:center;gap:16px;flex:0 0 auto;}
 .pie{width:120px;height:120px;border-radius:50%;flex-shrink:0;}
@@ -674,8 +689,14 @@ tfoot td{
     <div class="panel-head">
       <h2>Payment Planning</h2>
     </div>
-    <div class="panel-sub" id="planningIntro">tag a bill's "pay from" as <b>credit</b> and give it a balance to see a payoff plan here</div>
+    <div class="panel-sub" id="planningIntro">tick <b>Credit</b> on a bill and give it a balance to see a payoff plan here</div>
     <div id="planningBody" style="display:none;">
+      <div class="debit-row">
+        <label for="debitInput">debit left over</label>
+        <input type="number" step="0.01" id="debitInput" placeholder="what's actually in debit right now">
+        <button type="button" class="linkbtn" id="debitReset" title="go back to the calculated figure">use calculated</button>
+        <span class="dim" id="debitHint"></span>
+      </div>
       <div class="planning-top">
         <div class="pie-wrap">
           <div class="pie" id="planningPie"></div>
@@ -827,6 +848,7 @@ function loadFromCloud(){
   undoStack = [];
   db.collection('ledgers').doc(currentUid).get().then(docSnap=>{
     data = (docSnap.exists && docSnap.data()) ? docSnap.data() : defaultData();
+    if(data.debitLeftover===undefined) data.debitLeftover = null;
     data.pay.forEach(r=>{
       if(r.type==='bill' && !r.dueDate) r.dueDate = r.date || todayISO();
       if(r.type==='bill' && !r.method) r.method='direct';
@@ -1440,7 +1462,10 @@ function computePlanning(){
   if(!next) return null;
   const income = incomeRows().reduce((s,r)=>s+r.amount, 0);
   const billsTotal = data.pay.filter(r=>r.type==='bill').reduce((s,r)=>s+r.amount, 0);
-  const leftover = Math.round((income - billsTotal) * 100) / 100;
+  const calcLeftover = Math.round((income - billsTotal) * 100) / 100;
+  // if you've typed in what's actually in debit, that wins over the calculated figure
+  const hasOverride = typeof data.debitLeftover === 'number' && !isNaN(data.debitLeftover);
+  const leftover = hasOverride ? Math.round(data.debitLeftover * 100) / 100 : calcLeftover;
   const credits = getCreditRows().slice().sort((a,b)=>(a.debtBalance)-(b.debtBalance));
   let toCredit = 0, toSavings = 0;
   if(leftover > 0){
@@ -1456,7 +1481,7 @@ function computePlanning(){
       toSavings = leftover;
     }
   }
-  return {next, income, billsTotal, leftover, toCredit, toSavings, credits};
+  return {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits};
 }
 
 function simulatePayoff(credits, extraMonthly, startDate){
@@ -1484,6 +1509,25 @@ function simulatePayoff(credits, extraMonthly, startDate){
   return results;
 }
 
+document.addEventListener('DOMContentLoaded', ()=>{
+  const inp = document.getElementById('debitInput');
+  const reset = document.getElementById('debitReset');
+  if(!inp) return;
+  inp.addEventListener('input', ()=>{
+    const v = parseFloat(inp.value);
+    data.debitLeftover = isNaN(v) ? null : v;
+    queueSave();
+    renderPlanning();
+  });
+  inp.addEventListener('blur', ()=>renderPlanning());
+  reset.addEventListener('click', ()=>{
+    data.debitLeftover = null;
+    inp.value = '';
+    queueSave();
+    renderPlanning();
+  });
+});
+
 function renderPlanning(){
   const intro = document.getElementById('planningIntro');
   const body = document.getElementById('planningBody');
@@ -1496,7 +1540,18 @@ function renderPlanning(){
   intro.style.display = 'none';
   body.style.display = '';
 
-  const {next, income, billsTotal, leftover, toCredit, toSavings, credits} = planning;
+  const {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits} = planning;
+
+  // keep the debit field in sync (but never overwrite it while you're typing in it)
+  const debitInput = document.getElementById('debitInput');
+  if(document.activeElement !== debitInput){
+    debitInput.value = hasOverride ? data.debitLeftover.toFixed(2) : '';
+  }
+  debitInput.classList.toggle('active', hasOverride);
+  document.getElementById('debitReset').style.display = hasOverride ? '' : 'none';
+  document.getElementById('debitHint').textContent = hasOverride
+    ? `calculated would be ${numFmt(calcLeftover)}`
+    : `calculated: ${numFmt(calcLeftover)} — type your real debit balance to override`;
 
   // pie: Bills / Savings(extra) / Credit(extra), as a share of this paycheck
   const pieTotal = billsTotal + toSavings + toCredit || 1;
@@ -1516,8 +1571,10 @@ function renderPlanning(){
     : `Priority target: <b>${escapeHtml(priority.name)}</b> (smallest balance, $${priority.debtBalance.toFixed(2)} left).`;
 
   document.getElementById('planningReco').innerHTML = `
-    This cycle: ${money(income)} in total income against ${money(billsTotal)} in bills leaves you
-    <span class="reco-amt">${money(leftover)} walking-around money</span>
+    ${hasOverride
+      ? `You have <span class="reco-amt">${money(leftover)} in debit right now</span> (you entered this; the calculated figure is ${money(calcLeftover)}).`
+      : `This cycle: ${money(income)} in total income against ${money(billsTotal)} in bills leaves you
+    <span class="reco-amt">${money(leftover)} walking-around money</span>`}
     ${payoffNote}
     <br><br>
     Recommended split: <b>${money(toSavings)} → Savings</b>, <b>${money(toCredit)} → ${escapeHtml(priority.name)}</b>.
