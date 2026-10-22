@@ -1277,7 +1277,8 @@ function renderQaList(){
   const total = quickAddContext.entries.reduce((s,v)=>s+v, 0);
   totalEl.textContent = total.toFixed(2);
   list.querySelectorAll('button[data-idx]').forEach(b=>{
-    b.addEventListener('click', ()=>{
+    b.addEventListener('click', (e)=>{
+      e.stopPropagation();
       quickAddContext.entries.splice(parseInt(b.dataset.idx), 1);
       renderQaList();
     });
@@ -1320,7 +1321,7 @@ document.getElementById('quickAddInput').addEventListener('keydown', (e)=>{
 });
 document.addEventListener('click', (e)=>{
   const pop = document.getElementById('quickAddPopover');
-  if(pop.style.display !== 'none' && !pop.contains(e.target) && !e.target.classList.contains('quick-add-btn')){
+  if(pop.style.display !== 'none' && e.target.isConnected && !pop.contains(e.target) && !e.target.classList.contains('quick-add-btn')){
     closeQuickAdd();
   }
 });
