@@ -686,7 +686,7 @@ function paycheckColor(paycheckId, incomes){
   return idx === -1 ? 'var(--ink-soft)' : PAYCHECK_COLORS[idx % PAYCHECK_COLORS.length];
 }
 const todayISO = () => new Date().toISOString().slice(0,10);
-const shortDate = iso => { const d = new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}); };
+const shortDate = iso => { const d = new Date(iso+'T00:00:00'); const opts = {month:'short', day:'numeric'}; if(d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric'; return d.toLocaleDateString(undefined, opts); }; // shows the year only when it isn't this year, so a wrong-year date stands out
 
 function addMonths(iso, n){
   const d = new Date(iso+'T00:00:00');
@@ -1702,7 +1702,7 @@ function renderChecking(){
   document.getElementById('ckDueList').innerHTML = c.due.length
     ? c.due.map(r=>`<div class="due-item">
         <span class="nm">${escapeHtml(r.name)}</span>
-        ${(r.dueDate||'') < c.today ? '<span class="tag-overdue">overdue</span>' : ''}
+        ${(r.dueDate||'') < c.today ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : ''}
         <span class="dt">${r.dueDate ? shortDate(r.dueDate) : '—'}</span>
         <span class="am">${money(r.amount)}</span>
       </div>`).join('')
