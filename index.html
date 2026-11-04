@@ -305,7 +305,19 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .tag-overdue{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#17201A;background:var(--red);border-radius:999px;padding:1px 7px;}
 .due-groups{display:flex;flex-direction:column;gap:12px;}
 .due-group{background:var(--surface-2);border:2px solid var(--line);border-left:5px solid var(--gc,var(--teal));border-radius:14px;padding:10px 14px 9px;}
-.dg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding-bottom:7px;border-bottom:1.5px solid var(--line);}
+.dg-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0 7px;border-bottom:1.5px solid var(--line);cursor:pointer;user-select:none;}
+.dg-head:focus-visible{outline:3px solid var(--gold);outline-offset:4px;border-radius:6px;}
+.dg-right{display:flex;align-items:center;gap:10px;}
+.dg-chev{width:26px;height:26px;flex:none;display:grid;place-items:center;border:1.5px solid var(--line);border-radius:8px;color:var(--muted);transition:transform .2s,border-color .12s,color .12s;}
+.dg-chev svg{width:12px;height:12px;}
+.dg-head:hover .dg-chev{border-color:var(--gc,var(--teal));color:var(--ink);}
+.due-group.open .dg-chev{transform:rotate(180deg);}
+.due-group:not(.open) .dg-head{border-bottom:none;padding-bottom:2px;}
+.due-group:not(.open) .dg-body{display:none;}
+.dg-peek{font-size:12px;color:var(--muted);}
+.dg-peek b{font-family:var(--mono);font-weight:600;}
+.dg-peek b.good{color:var(--vault);} .dg-peek b.bad{color:var(--red);}
+.due-group.open .dg-peek{display:none;}
 .dg-title{font-family:var(--display);font-weight:800;font-size:16px;line-height:1.2;}
 .dg-sub{font-size:12px;color:var(--muted);margin-top:1px;}
 .dg-total{font-family:var(--mono);font-weight:600;font-size:15px;white-space:nowrap;}
@@ -1647,6 +1659,26 @@ const localToday = () => { const d = new Date(); return d.getFullYear()+'-'+Stri
 const round2 = n => Math.round(n*100)/100;
 const daysBetween = (a,b) => Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/864e5);
 
+// which "Bills by paycheck" groups are expanded; remembered on this device
+let ckOpenGroups = new Set();
+try{ ckOpenGroups = new Set(JSON.parse(localStorage.getItem('ledger-ck-open') || '[]')); }catch(e){}
+function toggleCkGroup(key){
+  if(ckOpenGroups.has(key)) ckOpenGroups.delete(key); else ckOpenGroups.add(key);
+  try{ localStorage.setItem('ledger-ck-open', JSON.stringify([...ckOpenGroups])); }catch(e){}
+  renderChecking();
+}
+const CHEV = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg>';
+function dueGroupHtml(key, color, title, sub, total, peek, bodyHtml){
+  const open = ckOpenGroups.has(key);
+  return `<div class="due-group${open?' open':''}" style="--gc:${color}">
+    <div class="dg-head" role="button" tabindex="0" aria-expanded="${open}" data-ckgroup="${escapeHtml(key)}">
+      <div><div class="dg-title">${title}</div><div class="dg-sub">${sub}</div>${peek ? `<div class="dg-peek">${peek}</div>` : ''}</div>
+      <div class="dg-right"><div class="dg-total">${money(total)}</div><span class="dg-chev" aria-hidden="true">${CHEV}</span></div>
+    </div>
+    <div class="dg-body">${bodyHtml}</div>
+  </div>`;
+}
+
 function computeChecking(){
   const ck = data.checking || {};
   const today = localToday();
@@ -1723,11 +1755,12 @@ function renderChecking(){
 
   let run = c.has ? round2(c.balance - c.dueTotal) : null;
   const groups = [];
-  groups.push(`<div class="due-group" style="--gc:var(--teal)">
-    <div class="dg-head"><div><div class="dg-title">${c.next ? `Before ${shortDate(c.next.date)}` : 'Unpaid bills'}</div><div class="dg-sub">covered by what's in checking now · ${c.due.length} bill${c.due.length===1?'':'s'}</div></div><div class="dg-total">${money(c.dueTotal)}</div></div>
-    ${itemsHtml(c.due)}
-    ${run!==null ? `<div class="dg-foot"><span>Checking after these bills</span><b class="${run<0?'bad':''}">${money(run)}</b></div>` : ''}
-  </div>`);
+  groups.push(dueGroupHtml('now', 'var(--teal)',
+    c.next ? `Before ${shortDate(c.next.date)}` : 'Unpaid bills',
+    `covered by what's in checking now · ${c.due.length} bill${c.due.length===1?'':'s'}`,
+    c.dueTotal,
+    run!==null ? `checking after: <b class="${run<0?'bad':'good'}">${money(run)}</b>` : '',
+    itemsHtml(c.due) + (run!==null ? `<div class="dg-foot"><span>Checking after these bills</span><b class="${run<0?'bad':''}">${money(run)}</b></div>` : '')));
   future.forEach((inc,i)=>{
     const endISO = future[i+1] ? future[i+1].date : null;
     const bills = unpaid.filter(r=>(r.dueDate||'') >= inc.date && (!endISO || (r.dueDate||'') < endISO));
@@ -1735,15 +1768,22 @@ function renderChecking(){
     const left = round2(inc.amount - total);
     if(run!==null) run = round2(run + inc.amount - total);
     const range = endISO ? `${shortDate(inc.date)} – ${shortDate(dayBefore(endISO))}` : `${shortDate(inc.date)} onward`;
-    groups.push(`<div class="due-group" style="--gc:${paycheckColor(inc.id, allIncomes)}">
-      <div class="dg-head"><div><div class="dg-title">${escapeHtml(inc.name)} · ${shortDate(inc.date)}</div><div class="dg-sub">covers bills due ${range} · ${bills.length} bill${bills.length===1?'':'s'}</div></div><div class="dg-total">${money(total)}</div></div>
-      ${itemsHtml(bills)}
-      <div class="dg-foot"><span>${money(inc.amount)} payday − ${money(total)} bills</span><b class="${left<0?'bad':'good'}">${money(left)} left</b></div>
-      ${run!==null ? `<div class="dg-foot"><span>Checking after these bills</span><b class="${run<0?'bad':''}">${money(run)}</b></div>` : ''}
-    </div>`);
+    groups.push(dueGroupHtml(inc.id, paycheckColor(inc.id, allIncomes),
+      `${escapeHtml(inc.name)} · ${shortDate(inc.date)}`,
+      `covers bills due ${range} · ${bills.length} bill${bills.length===1?'':'s'}`,
+      total,
+      `<b class="${left<0?'bad':'good'}">${money(left)}</b> left from this paycheck`,
+      itemsHtml(bills)
+        + `<div class="dg-foot"><span>${money(inc.amount)} payday − ${money(total)} bills</span><b class="${left<0?'bad':'good'}">${money(left)} left</b></div>`
+        + (run!==null ? `<div class="dg-foot"><span>Checking after these bills</span><b class="${run<0?'bad':''}">${money(run)}</b></div>` : '')));
   });
   document.getElementById('ckDueHead').textContent = future.length ? 'Bills by paycheck' : 'Unpaid bills';
-  document.getElementById('ckDueList').innerHTML = `<div class="due-groups">${groups.join('')}</div>`;
+  const list = document.getElementById('ckDueList');
+  list.innerHTML = `<div class="due-groups">${groups.join('')}</div>`;
+  list.querySelectorAll('[data-ckgroup]').forEach(h=>{
+    h.addEventListener('click', ()=>toggleCkGroup(h.dataset.ckgroup));
+    h.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); toggleCkGroup(h.dataset.ckgroup); } });
+  });
 }
 
 function wireChecking(){
