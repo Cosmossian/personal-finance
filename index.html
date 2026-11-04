@@ -5,573 +5,392 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ledger</title>
 <link rel="apple-touch-icon" href="https://i.imgur.com/5Rr00lm.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='8' fill='%233DBA70' stroke='%23000' stroke-width='2'/%3E%3Crect x='8' y='9' width='16' height='14' rx='2' fill='none' stroke='%230B140E' stroke-width='2.4'/%3E%3Ccircle cx='16' cy='16' r='3' fill='none' stroke='%230B140E' stroke-width='2.4'/%3E%3C/svg%3E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ledger">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1f4b32">
+<meta name="theme-color" content="#0E1210">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
+/* The Vault, after dark. Same chunky outlined look as the rest of That One Drawer
+   (thick borders, hard offset shadows), on a dark background with Vault green doing the color work. */
 :root{
-  --paper:#F6F2E8;
-  --paper-line:#5c684f2b;
-  --ink:#20261c;
-  --ink-soft:#5b6350;
-  --pine:#1f4b32;
-  --pine-deep:#153824;
-  --brass:#a9782f;
-  --brick:#a3402c;
-  --paid:#3c6e4a;
+  --bg:#0E1210;
+  --surface:#171D19;
+  --surface-2:#1F2722;
+  --ink:#EDF1E9;
+  --muted:#9AA79E;
+  --line:#36423B;
+  --line-soft:#2A332D;
+  --shadow:#000;
+  --vault:#3DBA70;
+  --gold:#F5B400;
+  --red:#FF6A4D;
+  --plum:#A07BE0;
+  --sky:#5B9BEF;
+  --pink:#FF8DBC;
+  --teal:#3CC7C1;
+  --on-color:#0B140E;
+  --display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  /* older names the script still uses */
+  --pine:var(--vault); --brass:var(--gold); --brick:var(--red); --paid:var(--vault);
+  --ink-soft:var(--muted); --paper:var(--bg); --paper-line:var(--line-soft);
+  color-scheme:dark;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
-  background:var(--paper);
+  background:
+    radial-gradient(1100px 480px at 50% -220px, rgba(61,186,112,.16), transparent 70%),
+    radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0/22px 22px,
+    var(--bg);
+  background-attachment:fixed;
   color:var(--ink);
-  font-family:'Inter',sans-serif;
-  padding:28px 18px 80px;
+  font-family:var(--body);
+  line-height:1.45;
   min-height:100vh;
+  -webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:880px;margin:0 auto;}
+button,input,select,textarea{font:inherit;color:inherit;}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-0.02em;}
+.wrap{max-width:980px;margin:0 auto;padding:28px 18px 90px;}
 
-.masthead{
-  display:flex;
-  justify-content:space-between;
-  align-items:baseline;
-  border-bottom:2px solid var(--ink);
-  padding-bottom:10px;
-  margin-bottom:26px;
-}
-.masthead h1{
-  font-family:'Fraunces',serif;
-  font-weight:600;
-  font-size:28px;
-  margin:0;
-  letter-spacing:-0.01em;
-}
-.masthead .date{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:12px;
-  color:var(--ink-soft);
-}
+/* ---------- header ---------- */
+.masthead{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+.brand{display:flex;align-items:center;gap:14px;}
+.logo{width:54px;height:54px;flex:none;display:grid;place-items:center;background:var(--vault);border:2px solid #000;border-radius:15px;box-shadow:4px 4px 0 var(--shadow);}
+.logo svg{width:30px;height:30px;}
+.masthead h1{font-weight:800;font-size:clamp(26px,4.4vw,38px);line-height:1;}
+.masthead .date{color:var(--muted);font-size:14px;font-weight:600;margin-top:4px;}
+.masthead-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border:2px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);font-weight:700;font-size:14px;cursor:pointer;box-shadow:3px 3px 0 var(--shadow);transition:transform .12s,box-shadow .12s,border-color .12s;white-space:nowrap;}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--shadow);border-color:var(--vault);}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow);}
+.btn:disabled{opacity:.35;cursor:default;transform:none;box-shadow:3px 3px 0 var(--shadow);border-color:var(--line);}
 
+/* ---------- hero ---------- */
 .hero{
-  background:var(--pine);
-  color:var(--paper);
-  border-radius:2px;
-  padding:26px 24px;
-  margin-bottom:22px;
-  position:relative;
-  overflow:hidden;
+  position:relative;overflow:hidden;
+  background:var(--vault);color:var(--on-color);
+  border:2px solid #000;border-radius:24px;
+  padding:26px 26px 22px;margin-bottom:18px;
+  box-shadow:6px 6px 0 var(--shadow);
+  transition:background .3s;
 }
-.hero::after{
-  content:"";
-  position:absolute;
-  right:-40px;top:-40px;
-  width:160px;height:160px;
-  border:1px solid rgba(246,242,232,0.14);
-  border-radius:50%;
-}
-.hero .label{
-  font-size:12px;
-  color:#cfe0d2;
-  margin-bottom:6px;
-}
-.hero .amount{
-  font-family:'Fraunces',serif;
-  font-size:54px;
-  font-weight:500;
-  line-height:1;
-  font-variant-numeric:tabular-nums;
-}
-.hero .amount.neg{color:#e7b8ab;}
-.hero-row{
-  display:flex;
-  gap:28px;
-  margin-top:18px;
-  flex-wrap:wrap;
-}
-.hero-stat{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#d8e4d9;}
-.hero-stat b{display:block;font-size:16px;color:var(--paper);font-weight:600;}
+.hero::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(120deg,transparent 0 22px,rgba(0,0,0,.05) 22px 24px);pointer-events:none;}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border:3px solid rgba(0,0,0,.16);border-radius:50%;box-shadow:inset 0 0 0 26px rgba(0,0,0,.05);pointer-events:none;}
+.hero > *{position:relative;z-index:1;}
+.hero:has(.amount.neg){background:var(--red);}
+.hero .label{display:inline-block;background:var(--on-color);color:var(--vault);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px;}
+.hero:has(.amount.neg) .label{color:var(--red);}
+.hero .amount{font-family:var(--display);font-weight:800;font-size:clamp(46px,9vw,80px);line-height:1;margin-top:14px;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;}
+.hero-row{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.hero-stat{background:var(--on-color);color:var(--muted);border-radius:14px;padding:9px 15px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.hero-stat b{display:block;font-family:var(--mono);font-size:17px;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:0;margin-top:2px;}
 
-.advance-bar{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:26px;
-  font-family:'IBM Plex Mono',monospace;
-  font-size:12px;
-  color:var(--ink-soft);
-}
+.advance-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:2px dashed var(--line);border-radius:16px;padding:12px 12px 12px 18px;margin-bottom:28px;font-size:13px;color:var(--muted);}
 button.advance{
-  margin-left:auto;
-  background:var(--brass);
-  color:#2a1f0e;
-  border:none;
-  font-family:'Fraunces',serif;
-  font-weight:600;
-  font-size:14px;
-  padding:10px 18px;
-  border-radius:2px;
-  cursor:pointer;
-  letter-spacing:0.01em;
+  margin-left:auto;background:var(--gold);color:#17201A;
+  border:2px solid #000;border-radius:12px;
+  font-family:var(--display);font-weight:800;font-size:15px;
+  padding:10px 18px;cursor:pointer;box-shadow:3px 3px 0 var(--shadow);
+  transition:transform .12s,box-shadow .12s;
 }
-button.advance:hover{background:#bd8a3c;}
-button.advance:active{transform:translateY(1px);}
+button.advance:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--shadow);}
+button.advance:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow);}
 
-.panel{margin-bottom:30px;}
-.panel-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  border-bottom:1.5px solid var(--ink);
-  padding-bottom:6px;
-  margin-bottom:2px;
-}
-.panel-head h2{
-  font-family:'Fraunces',serif;
-  font-size:18px;
-  font-weight:600;
-  margin:0;
-}
-.panel-sub{
-  font-size:11.5px;
-  color:var(--ink-soft);
-  margin:4px 0 10px;
-}
-.addbtn{
-  background:none;
-  border:1px solid var(--ink-soft);
-  color:var(--ink-soft);
-  font-family:'IBM Plex Mono',monospace;
-  font-size:11px;
-  padding:4px 9px;
-  border-radius:2px;
-  cursor:pointer;
-  white-space:nowrap;
-}
-.addbtn:hover{border-color:var(--ink);color:var(--ink);}
-.headbtns{display:flex;gap:8px;}
+/* ---------- panels ---------- */
+.panel{background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:18px 20px 20px;margin-bottom:24px;box-shadow:5px 5px 0 var(--shadow);}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+.panel-title{display:flex;align-items:center;gap:12px;}
+.ptile{width:40px;height:40px;flex:none;display:grid;place-items:center;border:2px solid #000;border-radius:12px;box-shadow:2px 2px 0 var(--shadow);}
+.ptile svg{width:21px;height:21px;}
+.panel-head h2{font-size:21px;font-weight:800;}
+.panel-sub{font-size:13px;color:var(--muted);margin:0 0 12px;max-width:70ch;}
+.addbtn{background:var(--surface-2);border:2px solid var(--line);color:var(--ink);font-weight:700;font-size:13px;padding:6px 12px;border-radius:10px;cursor:pointer;white-space:nowrap;box-shadow:2px 2px 0 var(--shadow);transition:transform .12s,border-color .12s;}
+.addbtn:hover{border-color:var(--vault);transform:translate(-1px,-1px);}
+.addbtn:active{transform:translate(1px,1px);box-shadow:none;}
+.headbtns{display:flex;gap:8px;flex-wrap:wrap;}
 
+/* ---------- tables ---------- */
 .tablewrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:780px;}
-th{
-  text-align:left;
-  font-family:'Inter',sans-serif;
-  font-weight:500;
-  font-size:10.5px;
-  color:var(--ink-soft);
-  padding:9px 6px 6px;
-  border-bottom:1px solid var(--paper-line);
-  white-space:nowrap;
-}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:780px;}
+th{text-align:left;font-weight:800;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:10px 6px 8px;border-bottom:2px solid var(--line);white-space:nowrap;}
 th.num,td.num{text-align:right;}
-td{
-  padding:7px 6px;
-  border-bottom:1px solid var(--paper-line);
-  vertical-align:middle;
-}
-tr.bill-row.paid td{color:var(--ink-soft);}
-tr.bill-row.paid td.name{text-decoration:line-through;text-decoration-color:var(--paid);}
-td input[type=text],td input[type=date],td input[type=number]{
-  font-family:inherit;
-  font-size:12.5px;
-  border:none;
-  background:transparent;
-  color:inherit;
-  width:100%;
-  padding:2px 0;
-}
-td input[type=date]{font-family:'IBM Plex Mono',monospace;font-size:11.5px;}
-td input[type=number]{
-  font-family:'IBM Plex Mono',monospace;
-  text-align:right;
-  -moz-appearance:textfield;
-}
-td input[type=number]::-webkit-inner-spin-button,
-td input[type=number]::-webkit-outer-spin-button{
-  -webkit-appearance:none;
-  margin:0;
-}
-.amt-wrap{position:relative;display:flex;align-items:center;justify-content:flex-end;gap:4px;}
-.amt-prefix{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-right:2px;}
+td{padding:8px 6px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
+tbody tr{transition:background .12s;}
+tbody tr:hover{background:rgba(255,255,255,.025);}
+tr.bill-row.paid td{color:var(--muted);}
+tr.bill-row.paid td.name{text-decoration:line-through;text-decoration-color:var(--vault);text-decoration-thickness:2px;}
+tr.bill-row.paid{opacity:.7;}
+td input[type=text],td input[type=date],td input[type=number],td input[type=url]{border:none;background:transparent;color:inherit;width:100%;padding:3px 0;font-size:13px;border-bottom:1px solid transparent;}
+td input[type=date]{font-family:var(--mono);font-size:12px;}
+td input[type=number]{font-family:var(--mono);text-align:right;-moz-appearance:textfield;}
+td input[type=number]::-webkit-inner-spin-button,td input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.amt-wrap{position:relative;display:flex;align-items:center;justify-content:flex-end;gap:5px;}
+.amt-prefix{font-family:var(--mono);font-size:12px;color:var(--muted);}
 .amt-wrap input{flex:1;}
-.paycheck-border{
-  display:inline-block;
-  border:1.5px solid;
-  border-radius:3px;
-  padding:1px 3px;
-}
-.paycheck-border select{border:none !important;}
-td input:focus{outline:none;border-bottom:1px solid var(--brass);}
-td textarea.name-input{
-  font-family:inherit;
-  font-size:12.5px;
-  border:none;
-  background:transparent;
-  color:inherit;
-  width:100%;
-  padding:2px 0;
-  resize:none;
-  overflow:hidden;
-  line-height:1.4;
-  display:block;
-}
-td textarea.name-input:focus{outline:none;border-bottom:1px solid var(--brass);}
-select{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:10.5px;
-  background:transparent;
-  border:1px solid var(--paper-line);
-  border-radius:2px;
-  color:var(--ink-soft);
-  padding:3px 3px;
-  max-width:150px;
-}
-select.method-direct{color:var(--paid);border-color:var(--paid);}
-select.method-savings{color:var(--brass);border-color:var(--brass);}
-.debt-row{display:flex;align-items:center;gap:6px;margin-top:3px;}
-.debt-row .dim{font-size:10px;text-transform:uppercase;letter-spacing:0.03em;}
-.amt-wrap.small{width:80px;}
-.amt-wrap.small input{font-size:12px;padding:2px 4px;border:1px solid var(--brick);border-radius:2px;}
-.chk{width:16px;height:16px;accent-color:var(--paid);cursor:pointer;}
-.rmv{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:14px;padding:0 4px;opacity:0.5;}
-.rmv:hover{opacity:1;color:var(--brick);}
-.split{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:0 4px;opacity:0.55;}
-.split:hover{opacity:1;color:var(--brass);}
-.dim{color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:11px;}
-.synced-amount{color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
-tr.split-row td{border-left:2px solid var(--brass);}
-tr.split-row td.name{padding-left:8px;}
-.split-tag{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--brass);margin-top:1px;}
-.paylink-row{display:flex;align-items:center;gap:6px;margin-top:2px;}
-.paylink-input{
-  font-family:'IBM Plex Mono',monospace !important;
-  font-size:10.5px !important;
-  color:var(--ink-soft) !important;
-  border-bottom:1px dotted var(--paper-line) !important;
-  flex:1;
-}
-.paylink-input:focus{border-bottom:1px solid var(--brass) !important;}
-.paylink-open{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:10.5px;
-  color:var(--paid);
-  text-decoration:none;
-  white-space:nowrap;
-  border:1px solid var(--paid);
-  border-radius:2px;
-  padding:1px 5px;
-}
-.paylink-open:hover{background:var(--paid);color:var(--paper);}
-.linkbtn{
-  background:none;
-  border:1px solid var(--paper-line);
-  color:var(--ink-soft);
-  font-family:'IBM Plex Mono',monospace;
-  font-size:10px;
-  padding:1px 5px;
-  border-radius:2px;
-  cursor:pointer;
-}
-.linkbtn:hover{border-color:var(--brass);color:var(--brass);}
-.linkbtn.ghost{opacity:0.55;}
-.date-display{cursor:pointer;border-bottom:1px dotted var(--paper-line);}
-.derived-val{color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:12.5px;border-bottom:1px dotted var(--paper-line);}
-.date-display:hover{color:var(--brass);border-bottom-color:var(--brass);}
+.paycheck-border{display:inline-block;border:2px solid;border-radius:9px;padding:0 2px;}
+.paycheck-border select{border:none !important;background:transparent !important;}
+td input:focus{outline:none;border-bottom:1px solid var(--gold);}
+td textarea.name-input{border:none;background:transparent;color:inherit;width:100%;padding:3px 0;resize:none;overflow:hidden;line-height:1.4;display:block;font-size:13.5px;font-weight:600;}
+td textarea.name-input:focus{outline:none;box-shadow:0 1px 0 var(--gold);}
+select{font-family:var(--mono);font-size:11px;background:var(--surface-2);border:1.5px solid var(--line);border-radius:8px;color:var(--muted);padding:4px 6px;max-width:170px;cursor:pointer;}
+select:focus{outline:none;border-color:var(--gold);}
+select.method-direct{color:var(--vault);border-color:rgba(61,186,112,.6);}
+select.method-savings{color:var(--gold);border-color:rgba(245,180,0,.6);}
+.debt-row{display:flex;align-items:center;gap:6px;margin-top:4px;}
+.debt-row .dim{font-size:10px;text-transform:uppercase;letter-spacing:.05em;}
+.amt-wrap.small{width:90px;}
+.amt-wrap.small input{font-size:12px;padding:2px 6px;border:1.5px solid var(--red);border-radius:6px;background:rgba(255,106,77,.08);}
+.chk{width:18px;height:18px;accent-color:var(--vault);cursor:pointer;}
+.rmv{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;opacity:.5;}
+.rmv:hover{opacity:1;color:var(--red);}
+.split{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;padding:0 4px;opacity:.6;}
+.split:hover{opacity:1;color:var(--gold);}
+.dim{color:var(--muted);font-family:var(--mono);font-size:11.5px;}
+.synced-amount{color:var(--muted);font-family:var(--mono);font-size:13px;}
+tr.split-row td:first-child{box-shadow:inset 3px 0 0 var(--gold);padding-left:10px;}
+.split-tag{display:block;font-family:var(--mono);font-size:10px;color:var(--gold);margin-top:2px;}
+.paylink-row{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.paylink-input{font-family:var(--mono) !important;font-size:10.5px !important;color:var(--muted) !important;border-bottom:1px dotted var(--line) !important;flex:1;}
+.paylink-input:focus{border-bottom:1px solid var(--gold) !important;}
+.paylink-open{font-size:11px;font-weight:800;color:var(--on-color);background:var(--vault);text-decoration:none;white-space:nowrap;border:1.5px solid #000;border-radius:999px;padding:2px 9px;}
+.paylink-open:hover{filter:brightness(1.1);}
+.linkbtn{background:none;border:1.5px solid var(--line);color:var(--muted);font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:999px;cursor:pointer;}
+.linkbtn:hover{border-color:var(--gold);color:var(--gold);}
+.linkbtn.ghost{opacity:.6;border-style:dashed;}
 .linkbtn.ghost:hover{opacity:1;}
-tfoot td{
-  border-top:1.5px solid var(--ink);
-  border-bottom:none;
-  font-family:'IBM Plex Mono',monospace;
-  font-weight:600;
-  padding-top:9px;
-}
+.date-display{cursor:pointer;border-bottom:1px dotted var(--line);}
+.date-display:hover{color:var(--gold);border-bottom-color:var(--gold);}
+.derived-val{color:var(--ink);font-family:var(--mono);font-size:13px;border-bottom:1px dotted var(--line);}
+tfoot td{border-top:2px solid var(--line);border-bottom:none;font-family:var(--mono);font-weight:600;padding-top:11px;font-size:14px;}
+tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppercase;font-size:12px;letter-spacing:.06em;color:var(--muted);}
 
-.savings-finish{color:var(--ink-soft);font-weight:600;}
-.savings-finish.gain{color:var(--paid);}
-.savings-finish.loss{color:var(--brick);}
-.savings-finish.neg{color:var(--brick);}
-.quick-add-btn{
-  flex:0 0 auto;
-  width:18px;height:18px;
-  border-radius:50%;
-  border:1px solid var(--brass);
-  color:var(--brass);
-  background:none;
-  font-family:'Inter',sans-serif;
-  font-size:13px;
-  line-height:1;
-  padding:0;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.quick-add-btn:hover{background:var(--brass);color:var(--paper);}
-.qa-backdrop{
-  position:fixed;
-  inset:0;
-  background:rgba(32,38,28,0.35);
-  z-index:199;
-}
-.quick-add-popover{
-  position:fixed;
-  top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  z-index:200;
-  background:var(--paper);
-  color:var(--ink);
-  border:1px solid var(--pine);
-  border-radius:4px;
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  width:min(85vw, 240px);
-  box-shadow:0 10px 28px rgba(0,0,0,0.3);
-}
-.qa-header{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:10px;
-  color:var(--ink-soft);
-  text-transform:uppercase;
-  letter-spacing:0.04em;
-}
-.qa-list{display:flex;flex-direction:column;gap:3px;max-height:110px;overflow-y:auto;}
-.qa-entry{
-  display:flex;justify-content:space-between;align-items:center;
-  font-family:'IBM Plex Mono',monospace;font-size:12.5px;
-  padding:3px 5px;
-  background:rgba(0,0,0,0.03);
-  border-radius:2px;
-}
-.qa-entry button{
-  background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:0 2px;
-}
-.qa-entry button:hover{color:var(--brick);}
-.qa-total{
-  font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
-  display:flex;justify-content:space-between;
-  border-top:1px solid var(--paper-line);
-  padding-top:6px;
-}
-.qa-input-row{display:flex;gap:5px;}
-.quick-add-popover input{
-  flex:1;
-  font-family:'IBM Plex Mono',monospace;
-  font-size:13px;
-  padding:6px 7px;
-  border:1px solid var(--paper-line);
-  border-radius:2px;
-  background:var(--paper);
-  color:var(--ink);
-}
-.quick-add-popover input::placeholder{color:var(--ink-soft);}
-.quick-add-popover input:focus{outline:none;border-color:var(--brass);}
-#quickAddEnter{
-  background:none;
-  border:1px solid var(--brass);
-  color:var(--brass);
-  border-radius:2px;
-  width:30px;
-  flex:0 0 30px;
-  font-size:14px;
-  cursor:pointer;
-}
-#quickAddEnter:hover{background:var(--brass);color:var(--paper);}
+.savings-finish{color:var(--muted);font-family:var(--mono);font-weight:600;}
+.savings-finish.gain{color:var(--vault);}
+.savings-finish.loss,.savings-finish.neg{color:var(--red);}
+.quick-add-btn{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);background:none;font-size:14px;font-weight:700;line-height:1;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.quick-add-btn:hover{background:var(--gold);color:#17201A;}
+
+/* ---------- quick add popover ---------- */
+.qa-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);z-index:199;}
+.quick-add-popover{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:9px;width:min(86vw,260px);box-shadow:6px 6px 0 var(--shadow);}
+.qa-header{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.qa-list{display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;}
+.qa-entry{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:13px;padding:4px 8px;background:var(--surface-2);border-radius:8px;}
+.qa-entry button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px;}
+.qa-entry button:hover{color:var(--red);}
+.qa-total{font-family:var(--mono);font-size:13px;font-weight:600;display:flex;justify-content:space-between;border-top:1.5px solid var(--line);padding-top:7px;}
+.qa-input-row{display:flex;gap:6px;}
+.quick-add-popover input{flex:1;min-width:0;font-family:var(--mono);font-size:14px;padding:8px 9px;border:2px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink);}
+.quick-add-popover input::placeholder{color:var(--muted);}
+.quick-add-popover input:focus{outline:none;border-color:var(--gold);}
+#quickAddEnter{background:none;border:2px solid var(--gold);color:var(--gold);border-radius:10px;width:36px;flex:0 0 36px;font-size:16px;font-weight:700;cursor:pointer;}
+#quickAddEnter:hover{background:var(--gold);color:#17201A;}
 .qa-actions{display:flex;gap:6px;}
-.qa-actions button{
-  flex:1;
-  font-family:'Fraunces',serif;
-  font-weight:600;
-  font-size:12px;
-  padding:7px 0;
-  border-radius:2px;
-  cursor:pointer;
-  border:none;
-}
-#quickAddConfirm{background:var(--brass);color:#2a1f0e;}
-#quickAddConfirm:hover{background:#bd8a3c;}
-.qa-cancel{background:none !important;border:1px solid var(--paper-line) !important;color:var(--ink-soft);}
-.qa-cancel:hover{border-color:var(--ink-soft) !important;color:var(--ink);}
+.qa-actions button{flex:1;font-family:var(--display);font-weight:800;font-size:13px;padding:8px 0;border-radius:10px;cursor:pointer;border:2px solid #000;}
+#quickAddConfirm{background:var(--gold);color:#17201A;box-shadow:2px 2px 0 var(--shadow);}
+.qa-cancel{background:none !important;border:2px solid var(--line) !important;color:var(--muted);}
+.qa-cancel:hover{border-color:var(--muted) !important;color:var(--ink);}
 
-.balance-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--paper-line);}
-.balance-name{flex:0 0 150px;font-size:13px;}
-.balance-name .d{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);}
-.balance-bar-track{flex:1;height:8px;background:#e5dfce;border-radius:4px;overflow:hidden;}
-.balance-bar-fill{height:100%;background:var(--pine);}
-.balance-bar-fill.neg{background:var(--brick);}
-.balance-amt{flex:0 0 84px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;}
-.balance-amt.neg{color:var(--brick);}
+/* ---------- paycheck balance ---------- */
+.balance-row{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line-soft);}
+.balance-row:last-child{border-bottom:none;}
+.balance-name{flex:0 0 160px;font-size:14px;font-weight:700;}
+.balance-name .d{display:block;font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted);}
+.balance-bar-track{flex:1;height:14px;background:var(--surface-2);border:1.5px solid var(--line);border-radius:999px;overflow:hidden;}
+.balance-bar-fill{height:100%;background:linear-gradient(90deg,#2E9E5B,var(--vault));border-radius:999px;transition:width .3s;}
+.balance-bar-fill.neg{background:linear-gradient(90deg,#C9442A,var(--red));}
+.balance-amt{flex:0 0 96px;text-align:right;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--vault);}
+.balance-amt.neg{color:var(--red);}
 
-.debit-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.debit-row label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);}
-.debit-row input{
-  width:130px;
-  font-family:'IBM Plex Mono',monospace;
-  font-size:13px;
-  text-align:right;
-  padding:6px 8px;
-  border:1px solid var(--paper-line);
-  border-radius:2px;
-  background:transparent;
-  color:var(--ink);
-}
-.debit-row input:focus{outline:none;border-color:var(--brass);}
-.debit-row input.active{border-color:var(--brass);}
-.planning-top{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-bottom:18px;}
-.pie-wrap{display:flex;align-items:center;gap:16px;flex:0 0 auto;}
-.pie{width:120px;height:120px;border-radius:50%;flex-shrink:0;}
-.pie-legend{display:flex;flex-direction:column;gap:6px;}
-.pie-legend-row{display:flex;align-items:center;gap:7px;font-size:12.5px;}
-.pie-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
-.pie-legend-row b{font-family:'IBM Plex Mono',monospace;margin-left:auto;padding-left:14px;}
-.planning-reco{
-  flex:1 1 240px;
-  background:var(--pine);
-  color:var(--paper);
-  border-radius:2px;
-  padding:16px 18px;
-  font-size:13.5px;
-  line-height:1.55;
-}
-.planning-reco b{color:var(--brass);}
-.planning-reco .reco-amt{font-family:'Fraunces',serif;font-size:19px;font-weight:600;display:block;margin:8px 0 2px;}
-.planning-note{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);margin-top:12px;line-height:1.5;}
-#payoffBody td:nth-child(2),#payoffBody td:nth-child(3){text-align:right;font-family:'IBM Plex Mono',monospace;}
-.foot-note{text-align:center;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:36px;}
-.saved-flash{
-  position:fixed;bottom:18px;right:18px;
-  background:var(--pine);color:var(--paper);
-  font-family:'IBM Plex Mono',monospace;font-size:11px;
-  padding:6px 12px;border-radius:2px;opacity:0;transition:opacity .4s;pointer-events:none;
-}
-.saved-flash.show{opacity:0.9;}
-.saved-flash.is-error{background:var(--brick);}
+/* ---------- payment planning ---------- */
+.debit-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.debit-row label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.debit-row input{width:140px;font-family:var(--mono);font-size:14px;text-align:right;padding:8px 10px;border:2px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink);}
+.debit-row input:focus,.debit-row input.active{outline:none;border-color:var(--gold);}
+.planning-top{display:flex;gap:24px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
+.pie-wrap{display:flex;align-items:center;gap:18px;flex:0 0 auto;}
+.pie{position:relative;width:128px;height:128px;border-radius:50%;flex-shrink:0;border:2px solid #000;box-shadow:3px 3px 0 var(--shadow);}
+.pie::after{content:"";position:absolute;inset:30px;border-radius:50%;background:var(--surface);border:2px solid #000;}
+.pie-legend{display:flex;flex-direction:column;gap:8px;}
+.pie-legend-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;}
+.pie-swatch{width:12px;height:12px;border-radius:4px;border:1.5px solid #000;flex-shrink:0;}
+.pie-legend-row b{font-family:var(--mono);font-weight:600;margin-left:auto;padding-left:16px;}
+.planning-reco{flex:1 1 260px;background:var(--surface-2);border:2px solid var(--line);border-left:6px solid var(--vault);border-radius:16px;padding:16px 18px;font-size:14px;line-height:1.6;}
+.planning-reco b{color:var(--gold);}
+.planning-reco .reco-amt{font-family:var(--display);font-size:24px;font-weight:800;color:var(--vault);display:block;margin:6px 0 4px;line-height:1.15;}
+.planning-note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.55;}
+#payoffBody td:nth-child(2),#payoffBody td:nth-child(3){text-align:right;font-family:var(--mono);}
+#planningPanel th:nth-child(2),#planningPanel th:nth-child(3){text-align:right;}
+#planningPanel table{min-width:0;}
 
-.auth-gate{
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
-}
-.auth-card{
-  width:100%;
-  max-width:340px;
-  background:var(--pine);
-  color:var(--paper);
-  border-radius:2px;
-  padding:32px 28px;
-  text-align:center;
-}
-.auth-card h1{
-  font-family:'Fraunces',serif;
-  font-weight:600;
-  font-size:24px;
-  margin:0 0 6px;
-}
-.auth-sub{
-  font-size:12.5px;
-  color:#cfe0d2;
-  margin:0 0 22px;
-}
-.auth-card input{
-  width:100%;
-  font-family:'Inter',sans-serif;
-  font-size:14px;
-  padding:10px 12px;
-  margin-bottom:10px;
-  border:1px solid rgba(246,242,232,0.25);
-  border-radius:2px;
-  background:rgba(246,242,232,0.06);
-  color:var(--paper);
-  box-sizing:border-box;
-}
-.auth-card input::placeholder{color:#a9bfae;}
-.auth-card input:focus{outline:none;border-color:var(--brass);}
-.auth-error{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:11.5px;
-  color:#e7b8ab;
-  min-height:16px;
-  margin-bottom:8px;
-}
-.auth-card button.advance{width:100%;margin:6px 0 10px;}
-.auth-alt{
-  background:none;
-  border:none;
-  color:#cfe0d2;
-  text-decoration:underline;
-  opacity:0.8;
-}
-.auth-alt:hover{opacity:1;color:var(--paper);border-color:transparent;}
+.foot-note{text-align:center;color:var(--muted);font-size:13px;margin-top:30px;}
+.saved-flash{position:fixed;bottom:18px;right:18px;z-index:300;background:var(--vault);color:var(--on-color);font-size:12px;font-weight:800;padding:7px 14px;border:2px solid #000;border-radius:999px;box-shadow:3px 3px 0 var(--shadow);opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s;pointer-events:none;}
+.saved-flash.show{opacity:1;transform:none;}
+.saved-flash.is-error{background:var(--red);}
 
-.masthead-right{display:flex;align-items:center;gap:12px;}
-#reloadBtn{font-size:15px;padding:2px 8px;}
-#undoBtn:disabled{opacity:0.35;cursor:default;}
+/* ---------- sign-in ---------- */
+.auth-gate{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:24px;}
+.auth-card{width:100%;max-width:360px;background:var(--surface);border:2px solid var(--line);border-radius:24px;padding:30px 28px 24px;text-align:center;box-shadow:6px 6px 0 var(--shadow);}
+.auth-card .logo{margin:0 auto 16px;}
+.auth-card h1{font-weight:800;font-size:28px;margin:0 0 6px;}
+.auth-sub{font-size:14px;color:var(--muted);margin:0 0 22px;}
+.auth-card input{width:100%;font-size:15px;padding:11px 13px;margin-bottom:10px;border:2px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--ink);}
+.auth-card input::placeholder{color:var(--muted);}
+.auth-card input:focus{outline:none;border-color:var(--gold);}
+.auth-error{font-family:var(--mono);font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px;}
+.auth-card button.advance{width:100%;margin:6px 0 12px;}
+.auth-alt{background:none;border:none !important;color:var(--muted);text-decoration:underline;font-size:13px;opacity:1;}
+.auth-alt:hover{color:var(--ink);}
+
 .pull-indicator{display:none;}
+
+
+/* ---------- account cards ---------- */
+.accounts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+.acct{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:14px 16px 15px;box-shadow:4px 4px 0 var(--shadow);cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;}
+.acct:hover{transform:translate(-1px,-2px);box-shadow:5px 6px 0 var(--shadow);border-color:var(--ac);}
+.acct-top{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+.acct-icon{width:28px;height:28px;flex:none;display:grid;place-items:center;background:var(--ac);border:2px solid #000;border-radius:9px;}
+.acct-icon svg{width:16px;height:16px;}
+.acct-amt{font-family:var(--display);font-weight:800;font-size:30px;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:6px;}
+.acct-amt.neg,.acct-amt.owed{color:var(--red);}
+.acct-amt.empty{color:var(--muted);}
+.acct-sub{font-size:12.5px;color:var(--muted);}
+.acct-sub b{color:var(--ink);font-weight:700;}
+.acct-sub b.good{color:var(--vault);} .acct-sub b.bad{color:var(--red);}
+
+/* ---------- checking ---------- */
+.ck-updated{font-size:12px;font-weight:700;color:var(--muted);}
+.ck-updated.stale{color:var(--gold);}
+.ck-grid{display:grid;grid-template-columns:minmax(220px,1fr) 1.35fr;gap:18px;align-items:stretch;}
+.ck-inputs{display:flex;flex-direction:column;gap:6px;}
+.field-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:6px;}
+.money-input{display:flex;align-items:center;gap:6px;background:var(--surface-2);border:2px solid var(--line);border-radius:12px;padding:7px 12px;transition:border-color .12s;}
+.money-input:focus-within{border-color:var(--gold);}
+.money-input span{font-family:var(--mono);color:var(--muted);}
+.money-input input{flex:1;min-width:0;border:none;background:transparent;font-family:var(--mono);font-size:16px;outline:none;-moz-appearance:textfield;}
+.money-input input::-webkit-inner-spin-button,.money-input input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.money-input.big input{font-size:24px;font-weight:600;}
+.money-input.big span{font-size:20px;}
+.ck-days{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.5;}
+.ck-days b{color:var(--ink);}
+.safe-card{background:var(--surface-2);border:2px solid var(--line);border-left:6px solid var(--vault);border-radius:16px;padding:16px 18px;}
+.safe-card.neg{border-left-color:var(--red);}
+.safe-card.empty{border-left-color:var(--line);}
+.safe-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+.safe-amt{font-family:var(--display);font-weight:800;font-size:clamp(38px,6vw,52px);line-height:1.05;letter-spacing:-.03em;color:var(--vault);margin:4px 0 12px;font-variant-numeric:tabular-nums;}
+.safe-card.neg .safe-amt{color:var(--red);}
+.safe-card.empty .safe-amt{color:var(--muted);font-size:20px;letter-spacing:0;font-family:var(--body);font-weight:600;}
+.safe-math{display:flex;flex-direction:column;gap:5px;font-size:13px;}
+.safe-math .ln{display:flex;justify-content:space-between;gap:10px;color:var(--muted);}
+.safe-math .ln b{font-family:var(--mono);font-weight:500;color:var(--ink);}
+.safe-math .ln.total{border-top:1.5px solid var(--line);padding-top:6px;margin-top:2px;color:var(--ink);font-weight:700;}
+.safe-math .ln.total b{font-weight:600;}
+.ck-due{margin-top:16px;}
+.ck-due-head{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;}
+.due-item{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--line-soft);font-size:14px;}
+.due-item:last-child{border-bottom:none;}
+.due-item .nm{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+.due-item .dt{font-family:var(--mono);font-size:12px;color:var(--muted);}
+.due-item .am{font-family:var(--mono);font-size:13px;width:90px;text-align:right;}
+.tag-overdue{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#17201A;background:var(--red);border-radius:999px;padding:1px 7px;}
+.ck-empty{font-size:13px;color:var(--muted);padding:6px 2px;}
+.ck-hint{font-size:12px;color:var(--muted);margin-top:8px;}
+
+/* ---------- savings goals ---------- */
+.goals-summary{font-size:13px;color:var(--muted);margin:0 0 14px;}
+.goals-summary b{color:var(--ink);}
+.goals-summary .warn{color:var(--gold);}
+.goals{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+.goal{position:relative;display:flex;flex-direction:column;gap:10px;background:var(--surface-2);border:2px solid var(--line);border-top:6px solid var(--gc);border-radius:16px;padding:12px 14px 14px;transition:border-color .2s,background .2s;}
+.goal.done{border-color:var(--vault);background:rgba(61,186,112,.08);}
+.goal-rmv{position:absolute;top:6px;right:6px;}
+.goal-name{border:none;background:transparent;font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:-.01em;padding:2px 24px 2px 0;width:100%;border-bottom:1px solid transparent;}
+.goal-name:focus{outline:none;border-bottom-color:var(--gold);}
+.goal-name::placeholder{color:var(--muted);font-weight:600;}
+.goal-bar{height:16px;background:var(--bg);border:1.5px solid var(--line);border-radius:999px;overflow:hidden;}
+.goal-fill{height:100%;width:0;background:var(--gc);border-radius:999px;transition:width .35s;}
+.goal-status{display:flex;justify-content:space-between;font-size:13px;font-weight:700;}
+.goal-status [data-role=pct]{color:var(--gc);}
+.goal-status [data-role=left]{color:var(--muted);font-family:var(--mono);font-weight:500;font-size:12.5px;}
+.goal.done .goal-status [data-role=left]{color:var(--vault);font-family:var(--body);font-weight:800;}
+.goal-fields{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;}
+.mini{display:flex;flex-direction:column;gap:3px;}
+.mini > span{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
+.mini-row{display:flex;align-items:center;gap:4px;}
+.mini input{width:100%;min-width:0;font-family:var(--mono);font-size:13px;text-align:right;padding:5px 7px;background:var(--surface);border:1.5px solid var(--line);border-radius:8px;-moz-appearance:textfield;}
+.mini input::-webkit-inner-spin-button,.mini input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.mini input:focus{outline:none;border-color:var(--gold);}
+.goal-eta{font-size:12.5px;color:var(--muted);line-height:1.45;}
+.goal-eta b{color:var(--ink);}
+.goal-empty{border:2px dashed var(--line);border-radius:16px;padding:22px;text-align:center;color:var(--muted);font-size:14px;}
+
 @media (max-width: 640px){
-  body{padding:16px 10px 100px;}
-  .masthead h1{font-size:22px;}
-  .hero{padding:20px 16px;}
-  .hero .amount{font-size:38px;}
-  .hero-row{gap:16px;}
-  .panel-head h2{font-size:16px;}
+  .accounts{grid-template-columns:1fr;gap:10px;}
+  .acct{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"top amt" "sub sub";align-items:center;column-gap:12px;row-gap:2px;padding:12px 14px;}
+  .acct-top{grid-area:top;}
+  .acct-amt{grid-area:amt;text-align:right;font-size:24px;margin-top:0;}
+  .acct-sub{grid-area:sub;}
+  .ck-grid{grid-template-columns:1fr;}
+  .goals{grid-template-columns:1fr;}
+}
+
+@media (max-width: 640px){
+  .wrap{padding:18px 10px 100px;}
+  .masthead h1{font-size:24px;}
+  .logo{width:46px;height:46px;border-radius:13px;}
+  .hero{padding:20px 18px 18px;border-radius:20px;}
+  .hero-row{gap:8px;}
+  .hero-stat{padding:7px 11px;}
+  .hero-stat b{font-size:15px;}
+  .advance-bar{padding:12px;}
+  button.advance{margin-left:0;width:100%;}
+  .panel{padding:14px 12px 14px;border-radius:18px;}
+  .panel-head h2{font-size:18px;}
+  .ptile{width:34px;height:34px;border-radius:10px;}
+  .balance-name{flex-basis:110px;}
+  .balance-amt{flex-basis:84px;}
 
   .tablewrap{overflow-x:visible;}
   table{min-width:0;width:100%;}
   thead{display:none;}
-  table, tbody, tr{display:block;width:100%;}
-  tr{
-    border:1px solid var(--paper-line);
-    border-radius:3px;
-    margin-bottom:8px;
-    padding:6px 10px;
-  }
-  tr.split-row{border-left:3px solid var(--brass);}
-  td{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:6px 0;
-    border-bottom:1px solid var(--paper-line);
-    text-align:right;
-  }
+  table,tbody,tr{display:block;width:100%;}
+  tbody tr{background:var(--surface-2);border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;padding:6px 12px;}
+  tbody tr:hover{background:var(--surface-2);}
+  tr.split-row{box-shadow:inset 4px 0 0 var(--gold);}
+  tr.split-row td:first-child{box-shadow:none;padding-left:0;}
+  td{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-soft);text-align:right;}
   td:last-child{border-bottom:none;}
-  td::before{
-    content:attr(data-label);
-    font-family:'IBM Plex Mono',monospace;
-    font-size:9.5px;
-    color:var(--ink-soft);
-    text-transform:uppercase;
-    letter-spacing:0.03em;
-    flex-shrink:0;
-    text-align:left;
-  }
+  td::before{content:attr(data-label);font-family:var(--body);font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;text-align:left;}
   td[data-label=""]::before{display:none;content:none;}
-  td.name{
-    display:block;
-    text-align:left;
-    border-bottom:1.5px solid var(--paper-line);
-    padding-bottom:8px;
-    margin-bottom:2px;
-  }
+  td.name{display:block;text-align:left;border-bottom:1.5px solid var(--line);padding-bottom:9px;margin-bottom:2px;}
   td.name::before{display:none;}
-  td.name textarea{text-align:left;font-size:14px;}
-  td input, td select, td textarea{text-align:right;}
-  td.name textarea, .paylink-row, .split-tag{text-align:left;}
-  td select{max-width:170px;}
+  td.name textarea{text-align:left;font-size:15px;}
+  td input,td select,td textarea{text-align:right;}
+  td.name textarea,.paylink-row,.split-tag{text-align:left;}
+  td select{max-width:180px;}
   .amt-wrap{justify-content:flex-end;}
+  tfoot,tfoot tr,tfoot td{display:flex;}
+  tfoot tr{width:100%;justify-content:space-between;padding:4px 12px;}
+  tfoot td{border-top:none;}
 }
+@media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
 </style>
 </head>
 <body>
 
 <div id="authGate" class="auth-gate">
   <div class="auth-card">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="22" height="19" rx="3"/><circle cx="16" cy="16.5" r="4.5"/><path d="M16 12v-1M16 22v-1M11.5 16.5h-1M21.5 16.5h-1"/></svg></div>
     <h1 id="authHeading">Sign In</h1>
     <p class="auth-sub" id="authSub">Welcome back — sign in to sync your data across your devices.</p>
     <input type="email" id="authEmail" placeholder="email" autocomplete="email">
@@ -585,36 +404,92 @@ tfoot td{
 <div id="appRoot" class="wrap" style="display:none;">
 
   <div class="masthead">
-    <h1>Household Ledger</h1>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="22" height="19" rx="3"/><circle cx="16" cy="16.5" r="4.5"/><path d="M16 12v-1M16 22v-1M11.5 16.5h-1M21.5 16.5h-1"/></svg></div>
+      <div>
+        <h1>Household Ledger</h1>
+        <div class="date" id="todayLabel"></div>
+      </div>
+    </div>
     <div class="masthead-right">
-      <button class="linkbtn" id="undoBtn" title="undo last change" disabled>↶ undo</button>
-      <button class="linkbtn" id="reloadBtn" title="reload">⟳</button>
-      <button class="linkbtn" id="signOutBtn">sign out</button>
-      <div class="date" id="todayLabel"></div>
+      <button class="btn" id="undoBtn" title="undo last change" disabled>↶ Undo</button>
+      <button class="btn" id="reloadBtn" title="reload">⟳</button>
+      <button class="btn" id="signOutBtn">Sign out</button>
     </div>
   </div>
 
   <div class="hero">
-    <div class="label">available right now</div>
+    <div class="label">Available right now</div>
     <div class="amount" id="heroAmount">$0.00</div>
     <div class="hero-row">
-      <div class="hero-stat">income<b id="statIncome">$0</b></div>
-      <div class="hero-stat">paid so far<b id="statBills">$0</b></div>
-      <div class="hero-stat">still to pay<b id="statUnpaid">$0</b></div>
+      <div class="hero-stat">Income<b id="statIncome">$0</b></div>
+      <div class="hero-stat">Paid so far<b id="statBills">$0</b></div>
+      <div class="hero-stat">Still to pay<b id="statUnpaid">$0</b></div>
     </div>
   </div>
 
+  <div class="accounts" id="accounts">
+    <button type="button" class="acct" data-go="checkingPanel" style="--ac:var(--teal)">
+      <span class="acct-top"><span class="acct-icon"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="26" height="17" rx="3"/><path d="M3 14h26M8 20h6"/></svg></span>Checking</span>
+      <span class="acct-amt" id="acctChecking">—</span>
+      <span class="acct-sub" id="acctCheckingSub"></span>
+    </button>
+    <button type="button" class="acct" data-go="savingsPanel" style="--ac:var(--vault)">
+      <span class="acct-top"><span class="acct-icon"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="16" cy="9" rx="9" ry="3.5"/><path d="M7 9v7c0 2 4 3.5 9 3.5s9-1.5 9-3.5V9M7 16v7c0 2 4 3.5 9 3.5s9-1.5 9-3.5v-7"/></svg></span>Savings</span>
+      <span class="acct-amt" id="acctSavings">$0.00</span>
+      <span class="acct-sub" id="acctSavingsSub"></span>
+    </button>
+    <button type="button" class="acct" data-go="planningPanel" style="--ac:var(--red)">
+      <span class="acct-top"><span class="acct-icon"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="26" height="18" rx="3"/><path d="M3 12h26"/><rect x="7" y="17" width="6" height="4" rx="1"/></svg></span>Credit</span>
+      <span class="acct-amt" id="acctCredit">$0.00</span>
+      <span class="acct-sub" id="acctCreditSub"></span>
+    </button>
+  </div>
+
   <div class="advance-bar">
-    advancing moves every paycheck and due date forward one calendar month, on the same day of month
+    <span>Advancing moves every paycheck and due date forward one calendar month, on the same day of month.</span>
     <button class="advance" id="advanceBtn">Advance a month →</button>
+  </div>
+
+  <div class="panel" id="checkingPanel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--teal)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="26" height="17" rx="3"/><path d="M3 14h26M8 20h6"/></svg></span>
+        <h2>Checking</h2>
+      </div>
+      <span class="ck-updated" id="ckUpdated"></span>
+    </div>
+    <div class="panel-sub">Type what your bank app says is in checking. Bills you haven't ticked as paid that are due before your next payday get set aside, and what's left is yours to spend.</div>
+    <div class="ck-grid">
+      <div class="ck-inputs">
+        <label class="field-label" for="ckBalance">In checking right now</label>
+        <div class="money-input big"><span>$</span><input type="number" step="0.01" inputmode="decimal" id="ckBalance" placeholder="0.00"></div>
+        <label class="field-label" for="ckCushion">Always keep a cushion of</label>
+        <div class="money-input"><span>$</span><input type="number" step="0.01" inputmode="decimal" id="ckCushion" placeholder="0.00"></div>
+        <div class="ck-days" id="ckDays"></div>
+      </div>
+      <div class="safe-card" id="ckSafeCard">
+        <div class="safe-label">Safe to spend</div>
+        <div class="safe-amt" id="ckSafe">—</div>
+        <div class="safe-math" id="ckMath"></div>
+      </div>
+    </div>
+    <div class="ck-due">
+      <div class="ck-due-head" id="ckDueHead"></div>
+      <div id="ckDueList"></div>
+      <div class="ck-hint">Paid one? Tick it in the Payment Schedule and update your balance above.</div>
+    </div>
   </div>
 
   <div class="panel">
     <div class="panel-head">
-      <h2>Payment Schedule</h2>
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--gold)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="24" height="22" rx="3"/><path d="M4 13h24M10 3v6M22 3v6"/></svg></span>
+        <h2>Payment Schedule</h2>
+      </div>
       <div class="headbtns">
-        <button class="addbtn" id="check3rd">check 3rd payday</button>
-        <button class="addbtn" id="addPay">+ add line</button>
+        <button class="addbtn" id="check3rd">Check 3rd payday</button>
+        <button class="addbtn" id="addPay">+ Add line</button>
       </div>
     </div>
     <div class="tablewrap">
@@ -640,17 +515,23 @@ tfoot td{
 
   <div class="panel">
     <div class="panel-head">
-      <h2>Paycheck Balance</h2>
-      <button class="addbtn" id="balanceBtn">balance evenly</button>
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--sky)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5v22M9 27h14M6 9h20"/><path d="M6 9l-4 9a4 4 0 0 0 8 0zM26 9l-4 9a4 4 0 0 0 8 0z"/></svg></span>
+        <h2>Paycheck Balance</h2>
+      </div>
+      <button class="addbtn" id="balanceBtn">Balance evenly</button>
     </div>
-    <div class="panel-sub">what's left from each paycheck once its assigned bills come out — "balance evenly" reassigns bills across paychecks so each leftover is as close as possible</div>
+    <div class="panel-sub">What's left from each paycheck once its assigned bills come out. "Balance evenly" reassigns bills across paychecks so each leftover is as close as possible.</div>
     <div id="balanceBody"></div>
   </div>
 
   <div class="panel">
     <div class="panel-head">
-      <h2>Monthly Expenditures</h2>
-      <button class="addbtn" id="addExp">+ add line</button>
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--plum)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14a10 10 0 0 1 17.5-5.5L26 11M26 5v6h-6"/><path d="M26 18a10 10 0 0 1-17.5 5.5L6 21M6 27v-6h6"/></svg></span>
+        <h2>Monthly Expenditures</h2>
+      </div>
+      <button class="addbtn" id="addExp">+ Add line</button>
     </div>
     <div class="tablewrap">
     <table>
@@ -663,10 +544,13 @@ tfoot td{
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="savingsPanel">
     <div class="panel-head">
-      <h2>Savings Runway</h2>
-      <button class="addbtn" id="addSav">+ add month</button>
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--vault)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="16" cy="8" rx="9" ry="3.5"/><path d="M7 8v6c0 2 4 3.5 9 3.5s9-1.5 9-3.5V8"/><path d="M7 14v6c0 2 4 3.5 9 3.5s9-1.5 9-3.5v-6"/><path d="M7 20v4c0 2 4 3.5 9 3.5s9-1.5 9-3.5v-4"/></svg></span>
+        <h2>Savings Runway</h2>
+      </div>
+      <button class="addbtn" id="addSav">+ Add month</button>
     </div>
     <div class="tablewrap">
     <table>
@@ -685,14 +569,29 @@ tfoot td{
     </div>
   </div>
 
+  <div class="panel" id="goalsPanel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--gold)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h16v6a8 8 0 0 1-16 0z"/><path d="M8 7H4v2a4 4 0 0 0 4 4M24 7h4v2a4 4 0 0 1-4 4M16 18v5M11 28h10M12 23h8v5h-8z"/></svg></span>
+        <h2>Savings Goals</h2>
+      </div>
+      <button class="addbtn" id="addGoal">+ Add goal</button>
+    </div>
+    <div class="goals-summary" id="goalsSummary"></div>
+    <div class="goals" id="goalsBody"></div>
+  </div>
+
   <div class="panel" id="planningPanel">
     <div class="panel-head">
-      <h2>Payment Planning</h2>
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--pink)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="6"/><circle cx="16" cy="16" r="1.5" fill="#0B140E"/></svg></span>
+        <h2>Payment Planning</h2>
+      </div>
     </div>
-    <div class="panel-sub" id="planningIntro">tick <b>Credit</b> on a bill and give it a balance to see a payoff plan here</div>
+    <div class="panel-sub" id="planningIntro">Tick <b>Credit</b> on a bill and give it a balance to see a payoff plan here.</div>
     <div id="planningBody" style="display:none;">
       <div class="debit-row">
-        <label for="debitInput">debit left over</label>
+        <label for="debitInput">Debit left over</label>
         <input type="number" step="0.01" id="debitInput" placeholder="0.00">
         <button type="button" class="linkbtn" id="debitReset" title="go back to the calculated figure">use calculated</button>
         <span class="dim" id="debitHint"></span>
@@ -712,11 +611,11 @@ tfoot td{
           <tbody id="payoffBody"></tbody>
         </table>
       </div>
-      <div class="planning-note">order follows the "snowball" method — smallest balance first — since it needs no interest-rate info and frees up monthly cash the fastest. As each debt clears, its payment rolls into the next one.</div>
+      <div class="planning-note">Order follows the "snowball" method — smallest balance first — since it needs no interest-rate info and frees up monthly cash the fastest. As each debt clears, its payment rolls into the next one.</div>
     </div>
   </div>
 
-  <div class="foot-note">your data syncs to your account and recalculates as you type</div>
+  <div class="foot-note">Your data syncs to your account and recalculates as you type.</div>
 </div>
 <div class="saved-flash" id="savedFlash">saved</div>
 <div class="qa-backdrop" id="qaBackdrop" style="display:none;"></div>
@@ -781,7 +680,7 @@ const numFmt = n => (n<0?'-':'') + Math.abs(n).toLocaleString(undefined,{minimum
 const uid = () => Math.random().toString(36).slice(2,9);
 const DEFAULT_NAME_PAY = 'New item';
 const DEFAULT_NAME_EXP = 'New subscription';
-const PAYCHECK_COLORS = ['#a9782f', '#3c6e4a', '#7a5ea8', '#a3402c', '#2e6f8e'];
+const PAYCHECK_COLORS = ['#F5B400', '#3DBA70', '#A07BE0', '#FF6A4D', '#5B9BEF'];
 function paycheckColor(paycheckId, incomes){
   const idx = incomes.findIndex(inc=>inc.id===paycheckId);
   return idx === -1 ? 'var(--ink-soft)' : PAYCHECK_COLORS[idx % PAYCHECK_COLORS.length];
@@ -840,7 +739,9 @@ function defaultData(){
     ],
     sav: [
       {id:uid(), month:'This month', start:0, income:0, out:0},
-    ]
+    ],
+    checking: {balance:null, cushion:0, updated:null},
+    goals: []
   };
 }
 
@@ -849,6 +750,8 @@ function loadFromCloud(){
   db.collection('ledgers').doc(currentUid).get().then(docSnap=>{
     data = (docSnap.exists && docSnap.data()) ? docSnap.data() : defaultData();
     if(data.debitLeftover===undefined) data.debitLeftover = null;
+    if(!data.checking) data.checking = {balance:null, cushion:0, updated:null};
+    if(!Array.isArray(data.goals)) data.goals = [];
     data.pay.forEach(r=>{
       if(r.type==='bill' && !r.dueDate) r.dueDate = r.date || todayISO();
       if(r.type==='bill' && !r.method) r.method='direct';
@@ -863,6 +766,8 @@ function loadFromCloud(){
   }).catch(e=>{
     console.error('load failed', e);
     data = defaultData();
+    data.checking = {balance:null, cushion:0, updated:null};
+    data.goals = [];
     render();
     updateUndoButtonState();
     flashSave('couldn\u2019t load your saved data — showing a blank template', true);
@@ -1003,6 +908,7 @@ function render(){
   syncMonthlyBillsToExpTotal(computeExpTotal());
   renderPay();
   renderSav();
+  renderGoals();
   renderHero();
   renderBalance();
   renderPlanning();
@@ -1249,9 +1155,10 @@ function renderExp(){
 
 let quickAddContext = null;
 
-function openQuickAdd(btn, row, field){
-  quickAddContext = {row, field, entries: []};
-  document.getElementById('qaFieldLabel').textContent = field === 'income' ? 'In' : 'Out';
+function openQuickAdd(btn, row, field, opts){
+  opts = opts || {};
+  quickAddContext = {row, field, entries: [], onApply: opts.onApply || null};
+  document.getElementById('qaFieldLabel').textContent = opts.label || (field === 'income' ? 'In' : 'Out');
   document.getElementById('qaBackdrop').style.display = 'block';
   const pop = document.getElementById('quickAddPopover');
   pop.style.display = 'flex';
@@ -1301,7 +1208,9 @@ function confirmQuickAdd(){
   if(!quickAddContext) return;
   addPendingInputToEntries();
   const total = quickAddContext.entries.reduce((s,v)=>s+v, 0);
-  if(total !== 0){
+  if(total !== 0 && quickAddContext.onApply){
+    quickAddContext.onApply(total);
+  } else if(total !== 0){
     const {row, field} = quickAddContext;
     row[field] = Math.round((row[field] + total) * 100) / 100;
     const mainInput = document.querySelector(`#savBody tr[data-rowid="${row.id}"] input[data-f="${field}"]`);
@@ -1355,6 +1264,8 @@ function updateSavDisplays(){
       finishEl.classList.toggle('neg', finish<0);
     }
   });
+  renderAccounts();
+  updateGoalsSummary();
 }
 
 function renderSav(){
@@ -1412,6 +1323,8 @@ function renderSav(){
     body.appendChild(tr);
   });
   applyMobileLabels('savBody');
+  renderAccounts();
+  updateGoalsSummary();
 }
 
 function renderBalance(){
@@ -1519,6 +1432,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     data.debitLeftover = isNaN(v) ? null : v;
     queueSave();
     renderPlanning();
+    renderAccounts();
   });
   inp.addEventListener('blur', ()=>renderPlanning());
   reset.addEventListener('click', ()=>{
@@ -1632,6 +1546,8 @@ function renderHero(){
   document.getElementById('statIncome').textContent = money(income);
   document.getElementById('statBills').textContent = money(paidBills + expTotal);
   document.getElementById('statUnpaid').textContent = money(unpaidBills);
+  renderChecking();
+  renderAccounts();
   return left;
 }
 
@@ -1714,6 +1630,269 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
 
   render();
   queueSave();
+});
+
+// ================= Checking, Savings Goals, account cards =================
+const localToday = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const round2 = n => Math.round(n*100)/100;
+const daysBetween = (a,b) => Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/864e5);
+
+function computeChecking(){
+  const ck = data.checking || {};
+  const today = localToday();
+  const next = incomeRows().find(i=>i.date > today) || null;
+  const due = data.pay
+    .filter(r=>r.type==='bill' && !r.paid && (!next || (r.dueDate||'') < next.date))
+    .sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  const dueTotal = round2(due.reduce((s,r)=>s+r.amount,0));
+  const has = typeof ck.balance==='number' && !isNaN(ck.balance);
+  const cushion = ck.cushion || 0;
+  const safe = has ? round2(ck.balance - dueTotal - cushion) : null;
+  const days = next ? daysBetween(today, next.date) : null;
+  return {has, balance:ck.balance, cushion, next, due, dueTotal, safe, days, today};
+}
+
+function renderChecking(){
+  if(!data || !document.getElementById('ckBalance')) return;
+  const c = computeChecking();
+  const bal = document.getElementById('ckBalance');
+  const cush = document.getElementById('ckCushion');
+  if(document.activeElement !== bal) bal.value = c.has ? c.balance.toFixed(2) : '';
+  if(document.activeElement !== cush) cush.value = c.cushion ? c.cushion.toFixed(2) : '';
+
+  const upd = document.getElementById('ckUpdated');
+  const u = data.checking.updated;
+  if(c.has && u){
+    const ago = daysBetween(u, c.today);
+    upd.textContent = ago<=0 ? 'updated today' : ago===1 ? 'updated yesterday' : `updated ${ago} days ago`;
+    upd.classList.toggle('stale', ago>=3);
+  } else { upd.textContent = ''; upd.classList.remove('stale'); }
+
+  const card = document.getElementById('ckSafeCard');
+  const safeEl = document.getElementById('ckSafe');
+  const math = document.getElementById('ckMath');
+  const untilLabel = c.next ? `bills due before ${shortDate(c.next.date)}` : 'all unpaid bills';
+  card.classList.toggle('empty', !c.has);
+  card.classList.toggle('neg', c.has && c.safe < 0);
+  if(!c.has){
+    safeEl.textContent = 'Add your balance to see this';
+    math.innerHTML = `<div class="ln">− ${untilLabel}<b>${money(c.dueTotal)}</b></div>`;
+  } else {
+    safeEl.textContent = money(c.safe);
+    math.innerHTML = `
+      <div class="ln">In checking<b>${money(c.balance)}</b></div>
+      <div class="ln">− ${untilLabel}<b>${money(c.dueTotal)}</b></div>
+      ${c.cushion ? `<div class="ln">− cushion<b>${money(c.cushion)}</b></div>` : ''}
+      <div class="ln total">${c.safe<0 ? 'Short by' : 'Yours to spend'}<b>${money(Math.abs(c.safe))}</b></div>`;
+  }
+
+  const daysEl = document.getElementById('ckDays');
+  if(c.next){
+    const dayWord = c.days===1 ? 'tomorrow' : `in ${c.days} days`;
+    let perDay = '';
+    if(c.has && c.safe > 0 && c.days > 0) perDay = `<br>That's about <b>${money(round2(c.safe / c.days))} a day</b> until then.`;
+    daysEl.innerHTML = `Next payday: <b>${escapeHtml(c.next.name)}</b> on ${shortDate(c.next.date)}, ${dayWord}.${perDay}`;
+  } else {
+    daysEl.innerHTML = 'No upcoming payday on the schedule, so every unpaid bill is counted.';
+  }
+
+  document.getElementById('ckDueHead').textContent = c.next
+    ? `Set aside before ${shortDate(c.next.date)} (${c.due.length})`
+    : `Unpaid bills (${c.due.length})`;
+  document.getElementById('ckDueList').innerHTML = c.due.length
+    ? c.due.map(r=>`<div class="due-item">
+        <span class="nm">${escapeHtml(r.name)}</span>
+        ${(r.dueDate||'') < c.today ? '<span class="tag-overdue">overdue</span>' : ''}
+        <span class="dt">${r.dueDate ? shortDate(r.dueDate) : '—'}</span>
+        <span class="am">${money(r.amount)}</span>
+      </div>`).join('')
+    : '<div class="ck-empty">Nothing unpaid is due before payday. 🎉</div>';
+}
+
+function wireChecking(){
+  const bal = document.getElementById('ckBalance');
+  const cush = document.getElementById('ckCushion');
+  bal.addEventListener('input', ()=>{
+    const v = parseFloat(bal.value);
+    data.checking.balance = isNaN(v) ? null : v;
+    data.checking.updated = localToday();
+    renderChecking(); renderAccounts(); queueSave();
+  });
+  cush.addEventListener('input', ()=>{
+    const v = parseFloat(cush.value);
+    data.checking.cushion = isNaN(v) ? 0 : v;
+    renderChecking(); renderAccounts(); queueSave();
+  });
+  bal.addEventListener('blur', renderChecking);
+  cush.addEventListener('blur', renderChecking);
+}
+wireChecking();
+
+function savingsBalance(){
+  const fins = computeSavFinishes();
+  return fins.length ? fins[fins.length-1] : 0;
+}
+
+function renderAccounts(){
+  if(!data || !document.getElementById('acctChecking')) return;
+  // Checking
+  const c = computeChecking();
+  const ckAmt = document.getElementById('acctChecking');
+  ckAmt.textContent = c.has ? money(c.balance) : '—';
+  ckAmt.classList.toggle('empty', !c.has);
+  ckAmt.classList.toggle('neg', c.has && c.balance < 0);
+  document.getElementById('acctCheckingSub').innerHTML = c.has
+    ? `safe to spend <b class="${c.safe<0?'bad':'good'}">${money(c.safe)}</b>`
+    : 'tap to add your balance';
+
+  // Savings
+  const sb = savingsBalance();
+  const svAmt = document.getElementById('acctSavings');
+  svAmt.textContent = money(sb);
+  svAmt.classList.toggle('neg', sb < 0);
+  const last = data.sav[data.sav.length-1];
+  const goalSaved = (data.goals||[]).reduce((s,g)=>s+(g.saved||0),0);
+  let sub = '';
+  if(last){
+    const ch = round2(last.income - last.out);
+    sub = `<b class="${ch<0?'bad':'good'}">${ch<0?'↓':'↑'} ${money(Math.abs(ch))}</b> in ${escapeHtml(last.month)}`;
+  }
+  if(goalSaved > 0) sub += `${sub ? ' · ' : ''}${money(goalSaved)} in goals`;
+  document.getElementById('acctSavingsSub').innerHTML = sub || 'add a month below';
+
+  // Credit
+  const credits = getCreditRows();
+  const owed = round2(credits.reduce((s,r)=>s+r.debtBalance,0));
+  const crAmt = document.getElementById('acctCredit');
+  crAmt.textContent = money(owed);
+  crAmt.classList.toggle('owed', owed > 0);
+  let crSub = 'nothing owed. Nice.';
+  if(credits.length){
+    crSub = `${credits.length} debt${credits.length===1?'':'s'}`;
+    const p = computePlanning();
+    if(p && p.credits.length){
+      const res = simulatePayoff(p.credits, p.toCredit, new Date(p.next.date+'T00:00:00'));
+      if(res.length === p.credits.length){
+        const lastDate = res[res.length-1].date;
+        crSub += ` · debt-free around <b>${lastDate.toLocaleDateString(undefined,{month:'short',year:'numeric'})}</b>`;
+      }
+    }
+  }
+  document.getElementById('acctCreditSub').innerHTML = crSub;
+}
+
+document.querySelectorAll('.acct[data-go]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const el = document.getElementById(btn.dataset.go);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    if(btn.dataset.go==='checkingPanel'){
+      const inp = document.getElementById('ckBalance');
+      if(inp && !(data.checking && typeof data.checking.balance==='number')) setTimeout(()=>inp.focus({preventScroll:true}), 400);
+    }
+  });
+});
+
+// ---------- Savings Goals ----------
+const GOAL_COLORS = ['var(--gold)','var(--sky)','var(--plum)','var(--pink)','var(--teal)','var(--vault)'];
+
+function goalEta(g){
+  const rem = round2((g.target||0) - (g.saved||0));
+  if((g.target||0) <= 0) return 'Set a goal amount to track progress.';
+  if(rem <= 0) return '<b>You made it!</b> Time to spend it, or set a bigger goal.';
+  if(!(g.monthly > 0)) return 'Add a per-month amount to see when you’ll get there.';
+  const months = Math.ceil(rem / g.monthly);
+  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + months);
+  return `At ${money(g.monthly)} a month: <b>${d.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b> (${months} month${months===1?'':'s'})`;
+}
+
+function updateGoalDisplay(g, card){
+  const target = g.target||0, saved = g.saved||0;
+  const pct = target > 0 ? Math.max(0, Math.min(saved/target, 1)) : 0;
+  const done = target > 0 && saved >= target;
+  card.querySelector('[data-role=fill]').style.width = (pct*100)+'%';
+  card.querySelector('[data-role=pct]').textContent = Math.round(pct*100) + '%';
+  card.querySelector('[data-role=left]').textContent = done ? 'Goal reached!' : `${money(Math.max(target-saved,0))} to go`;
+  card.querySelector('[data-role=eta]').innerHTML = goalEta(g);
+  if(done && card.dataset.done === '0') flashSave(`🎉 ${g.name || 'goal'} reached!`, false);
+  card.dataset.done = done ? '1' : '0';
+  card.classList.toggle('done', done);
+}
+
+function updateGoalsSummary(){
+  const el = document.getElementById('goalsSummary');
+  if(!el || !data) return;
+  if(!data.goals.length){ el.innerHTML = ''; return; }
+  const inGoals = round2(data.goals.reduce((s,g)=>s+(g.saved||0),0));
+  const sb = savingsBalance();
+  const diff = round2(sb - inGoals);
+  el.innerHTML = `Goals hold <b>${money(inGoals)}</b> of your <b>${money(sb)}</b> savings. ` + (diff >= 0
+    ? `${money(diff)} isn’t set aside for a goal yet.`
+    : `<span class="warn">That’s ${money(-diff)} more than your Savings Runway shows, so some money may be counted twice.</span>`);
+}
+
+function renderGoals(){
+  const box = document.getElementById('goalsBody');
+  if(!box) return;
+  box.innerHTML = '';
+  if(!data.goals.length){
+    box.innerHTML = '<div class="goal-empty">No goals yet. Add one to start saving toward something: a trip, a car, an emergency fund.</div>';
+    updateGoalsSummary();
+    return;
+  }
+  data.goals.forEach((g,i)=>{
+    const card = document.createElement('div');
+    card.className = 'goal';
+    card.dataset.goalid = g.id;
+    card.style.setProperty('--gc', GOAL_COLORS[i % GOAL_COLORS.length]);
+    card.innerHTML = `
+      <button type="button" class="rmv goal-rmv" data-rm="1" title="remove goal">×</button>
+      <input type="text" class="goal-name" data-f="name" value="${escapeHtml(g.name||'')}" placeholder="What are you saving for?">
+      <div class="goal-bar"><div class="goal-fill" data-role="fill"></div></div>
+      <div class="goal-status"><span data-role="pct"></span><span data-role="left"></span></div>
+      <div class="goal-fields">
+        <div class="mini"><span>Saved</span><div class="mini-row"><input type="number" step="0.01" inputmode="decimal" data-f="saved" value="${(g.saved||0).toFixed(2)}"><button type="button" class="quick-add-btn" data-role="qa" title="add money to this goal">+</button></div></div>
+        <div class="mini"><span>Goal</span><input type="number" step="0.01" inputmode="decimal" data-f="target" value="${(g.target||0).toFixed(2)}"></div>
+        <div class="mini"><span>Per month</span><input type="number" step="0.01" inputmode="decimal" data-f="monthly" value="${(g.monthly||0).toFixed(2)}"></div>
+      </div>
+      <div class="goal-eta" data-role="eta"></div>`;
+    card.dataset.done = (g.target>0 && g.saved>=g.target) ? '1' : '0';
+    card.querySelectorAll('[data-f]').forEach(el=>{
+      const field = el.dataset.f;
+      el.addEventListener('input', ()=>{
+        if(field==='name') g.name = el.value;
+        else g[field] = parseFloat(el.value) || 0;
+        updateGoalDisplay(g, card);
+        updateGoalsSummary(); renderAccounts(); queueSave();
+      });
+      if(field!=='name') el.addEventListener('blur', ()=>{ el.value = (g[field]||0).toFixed(2); });
+    });
+    card.querySelector('[data-role=qa]').addEventListener('click', (e)=>{
+      openQuickAdd(e.currentTarget, g, 'saved', {
+        label: g.name || 'this goal',
+        onApply: total=>{
+          g.saved = round2((g.saved||0) + total);
+          card.querySelector('[data-f=saved]').value = g.saved.toFixed(2);
+          updateGoalDisplay(g, card);
+          updateGoalsSummary(); renderAccounts(); queueSave();
+        }
+      });
+    });
+    card.querySelector('[data-rm]').addEventListener('click', ()=>{
+      pushUndoSnapshot();
+      data.goals = data.goals.filter(x=>x.id!==g.id);
+      renderGoals(); renderAccounts(); queueSave();
+    });
+    box.appendChild(card);
+    updateGoalDisplay(g, card);
+  });
+  updateGoalsSummary();
+}
+
+document.getElementById('addGoal').addEventListener('click', ()=>{
+  data.goals.push({id:uid(), name:'', target:500, saved:0, monthly:50});
+  renderGoals(); renderAccounts(); queueSave();
+  const names = document.querySelectorAll('#goalsBody .goal-name');
+  if(names.length) names[names.length-1].focus();
 });
 
 </script>
