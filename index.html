@@ -323,7 +323,10 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .dg-sub{font-size:12px;color:var(--muted);margin-top:1px;}
 .dg-total{font-family:var(--mono);font-weight:600;font-size:15px;white-space:nowrap;}
 .dg-foot{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted);padding-top:7px;margin-top:2px;border-top:1.5px solid var(--line);}
-.dg-foot + .dg-foot{border-top:none;padding-top:2px;margin-top:0;}
+.dg-foot + .dg-foot{border-top:none;padding-top:4px;margin-top:0;}
+.dg-foot{align-items:center;}
+.dg-foot span{color:var(--ink);font-weight:700;}
+.dg-foot small{display:block;font-weight:500;color:var(--muted);font-size:12px;}
 .dg-foot b{font-family:var(--mono);font-weight:600;color:var(--ink);white-space:nowrap;}
 .dg-foot b.good{color:var(--vault);} .dg-foot b.bad{color:var(--red);}
 .ck-empty{font-size:13px;color:var(--muted);padding:6px 2px;}
@@ -1758,28 +1761,34 @@ function renderChecking(){
       </div>`).join('')
     : '<div class="ck-empty">Nothing unpaid here. 🎉</div>';
 
-  let run = c.has ? round2(c.balance - c.dueTotal) : null;
+  // Each paycheck section shows two numbers:
+  //   Predicted left over = payday − that paycheck's bills
+  //   Actual left over    = what's in checking right now − that paycheck's bills
+  // The Before section has no payday, so it only shows the actual figure.
   const groups = [];
+  const nowActual = c.has ? round2(c.balance - c.dueTotal) : null;
+  const cls = n => n<0 ? 'bad' : 'good';
   groups.push(dueGroupHtml('now', 'var(--teal)',
     c.next ? `Before ${shortDate(c.next.date)}` : 'Unpaid bills',
     `due before payday, paid from checking now · ${c.due.length} bill${c.due.length===1?'':'s'}`,
     c.dueTotal,
-    run!==null ? `checking after: <b class="${run<0?'bad':'good'}">${money(run)}</b>` : '',
-    itemsHtml(c.due) + (run!==null ? `<div class="dg-foot"><span>Checking after these bills</span><b class="${run<0?'bad':''}">${money(run)}</b></div>` : '')));
-  future.forEach((inc,i)=>{
-    const nowIds = new Set(c.due.map(r=>r.id));
+    nowActual!==null ? `actual left over <b class="${cls(nowActual)}">${money(nowActual)}</b>` : '',
+    itemsHtml(c.due)
+      + `<div class="dg-foot"><span>Actual left over<small>${c.has ? `${money(c.balance)} in checking − ${money(c.dueTotal)} bills` : 'add your checking balance above'}</small></span><b class="${nowActual!==null ? cls(nowActual) : ''}">${nowActual!==null ? money(nowActual) : '—'}</b></div>`));
+  const nowIds = new Set(c.due.map(r=>r.id));
+  future.forEach(inc=>{
     const bills = unpaid.filter(r=>r.paycheckId===inc.id && !nowIds.has(r.id));
     const total = round2(bills.reduce((s,r)=>s+r.amount,0));
-    const left = round2(inc.amount - total);
-    if(run!==null) run = round2(run + inc.amount - total);
+    const predicted = round2(inc.amount - total);
+    const actual = c.has ? round2(c.balance - total) : null;
     groups.push(dueGroupHtml(inc.id, paycheckColor(inc.id, allIncomes),
       `${escapeHtml(inc.name)} · ${shortDate(inc.date)}`,
       `bills set to this paycheck · ${bills.length} bill${bills.length===1?'':'s'}`,
       total,
-      `<b class="${left<0?'bad':'good'}">${money(left)}</b> left from this paycheck`,
+      `predicted <b class="${cls(predicted)}">${money(predicted)}</b>${actual!==null ? ` · actual <b class="${cls(actual)}">${money(actual)}</b>` : ''}`,
       itemsHtml(bills, inc.date)
-        + `<div class="dg-foot"><span>${money(inc.amount)} payday − ${money(total)} bills</span><b class="${left<0?'bad':'good'}">${money(left)} left</b></div>`
-        + (run!==null ? `<div class="dg-foot"><span>Checking after these bills</span><b class="${run<0?'bad':''}">${money(run)}</b></div>` : '')));
+        + `<div class="dg-foot"><span>Predicted left over<small>${money(inc.amount)} payday − ${money(total)} bills</small></span><b class="${cls(predicted)}">${money(predicted)}</b></div>`
+        + `<div class="dg-foot"><span>Actual left over<small>${c.has ? `${money(c.balance)} in checking − ${money(total)} bills` : 'add your checking balance above'}</small></span><b class="${actual!==null ? cls(actual) : ''}">${actual!==null ? money(actual) : '—'}</b></div>`));
   });
   document.getElementById('ckDueHead').textContent = future.length ? 'Bills by paycheck' : 'Unpaid bills';
   const list = document.getElementById('ckDueList');
