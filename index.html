@@ -303,6 +303,16 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .due-item .dt{font-family:var(--mono);font-size:12px;color:var(--muted);}
 .due-item .am{font-family:var(--mono);font-size:13px;width:90px;text-align:right;}
 .tag-overdue{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#17201A;background:var(--red);border-radius:999px;padding:1px 7px;}
+.due-groups{display:flex;flex-direction:column;gap:12px;}
+.due-group{background:var(--surface-2);border:2px solid var(--line);border-left:5px solid var(--gc,var(--teal));border-radius:14px;padding:10px 14px 9px;}
+.dg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding-bottom:7px;border-bottom:1.5px solid var(--line);}
+.dg-title{font-family:var(--display);font-weight:800;font-size:16px;line-height:1.2;}
+.dg-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+.dg-total{font-family:var(--mono);font-weight:600;font-size:15px;white-space:nowrap;}
+.dg-foot{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted);padding-top:7px;margin-top:2px;border-top:1.5px solid var(--line);}
+.dg-foot + .dg-foot{border-top:none;padding-top:2px;margin-top:0;}
+.dg-foot b{font-family:var(--mono);font-weight:600;color:var(--ink);white-space:nowrap;}
+.dg-foot b.good{color:var(--vault);} .dg-foot b.bad{color:var(--red);}
 .ck-empty{font-size:13px;color:var(--muted);padding:6px 2px;}
 .ck-hint{font-size:12px;color:var(--muted);margin-top:8px;}
 
@@ -477,7 +487,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
     <div class="ck-due">
       <div class="ck-due-head" id="ckDueHead"></div>
       <div id="ckDueList"></div>
-      <div class="ck-hint">Paid one? Tick it in the Payment Schedule and update your balance above.</div>
+      <div class="ck-hint">Each payday covers the bills due before the next one. Paid one? Tick it in the Payment Schedule and update your balance above.</div>
     </div>
   </div>
 
@@ -1696,17 +1706,44 @@ function renderChecking(){
     daysEl.innerHTML = 'No upcoming payday on the schedule, so every unpaid bill is counted.';
   }
 
-  document.getElementById('ckDueHead').textContent = c.next
-    ? `Set aside before ${shortDate(c.next.date)} (${c.due.length})`
-    : `Unpaid bills (${c.due.length})`;
-  document.getElementById('ckDueList').innerHTML = c.due.length
-    ? c.due.map(r=>`<div class="due-item">
+  // Bills grouped by which money covers them: what's in checking now covers everything due before
+  // the next payday; each payday after that covers bills due up to the day before the following payday.
+  const allIncomes = incomeRows();
+  const future = allIncomes.filter(i=>i.date > c.today);
+  const unpaid = data.pay.filter(r=>r.type==='bill' && !r.paid).sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  const dayBefore = iso => { const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  const itemsHtml = bills => bills.length
+    ? bills.map(r=>`<div class="due-item">
         <span class="nm">${escapeHtml(r.name)}</span>
         ${(r.dueDate||'') < c.today ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : ''}
         <span class="dt">${r.dueDate ? shortDate(r.dueDate) : '—'}</span>
         <span class="am">${money(r.amount)}</span>
       </div>`).join('')
-    : '<div class="ck-empty">Nothing unpaid is due before payday. 🎉</div>';
+    : '<div class="ck-empty">Nothing unpaid due in this stretch. 🎉</div>';
+
+  let run = c.has ? round2(c.balance - c.dueTotal) : null;
+  const groups = [];
+  groups.push(`<div class="due-group" style="--gc:var(--teal)">
+    <div class="dg-head"><div><div class="dg-title">${c.next ? `Before ${shortDate(c.next.date)}` : 'Unpaid bills'}</div><div class="dg-sub">covered by what's in checking now · ${c.due.length} bill${c.due.length===1?'':'s'}</div></div><div class="dg-total">${money(c.dueTotal)}</div></div>
+    ${itemsHtml(c.due)}
+    ${run!==null ? `<div class="dg-foot"><span>Checking after these bills</span><b class="${run<0?'bad':''}">${money(run)}</b></div>` : ''}
+  </div>`);
+  future.forEach((inc,i)=>{
+    const endISO = future[i+1] ? future[i+1].date : null;
+    const bills = unpaid.filter(r=>(r.dueDate||'') >= inc.date && (!endISO || (r.dueDate||'') < endISO));
+    const total = round2(bills.reduce((s,r)=>s+r.amount,0));
+    const left = round2(inc.amount - total);
+    if(run!==null) run = round2(run + inc.amount - total);
+    const range = endISO ? `${shortDate(inc.date)} – ${shortDate(dayBefore(endISO))}` : `${shortDate(inc.date)} onward`;
+    groups.push(`<div class="due-group" style="--gc:${paycheckColor(inc.id, allIncomes)}">
+      <div class="dg-head"><div><div class="dg-title">${escapeHtml(inc.name)} · ${shortDate(inc.date)}</div><div class="dg-sub">covers bills due ${range} · ${bills.length} bill${bills.length===1?'':'s'}</div></div><div class="dg-total">${money(total)}</div></div>
+      ${itemsHtml(bills)}
+      <div class="dg-foot"><span>${money(inc.amount)} payday − ${money(total)} bills</span><b class="${left<0?'bad':'good'}">${money(left)} left</b></div>
+      ${run!==null ? `<div class="dg-foot"><span>Checking after these bills</span><b class="${run<0?'bad':''}">${money(run)}</b></div>` : ''}
+    </div>`);
+  });
+  document.getElementById('ckDueHead').textContent = future.length ? 'Bills by paycheck' : 'Unpaid bills';
+  document.getElementById('ckDueList').innerHTML = `<div class="due-groups">${groups.join('')}</div>`;
 }
 
 function wireChecking(){
