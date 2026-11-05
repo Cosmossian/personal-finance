@@ -302,6 +302,8 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .due-item .nm{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;}
 .due-item .dt{font-family:var(--mono);font-size:12px;color:var(--muted);}
 .due-item .am{font-family:var(--mono);font-size:13px;width:90px;text-align:right;}
+.due-item.is-paid .nm,.due-item.is-paid .am{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--vault);text-decoration-thickness:2px;}
+.tag-paid{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#0B140E;background:var(--vault);border-radius:999px;padding:1px 7px;}
 .tag-early{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#17201A;background:var(--gold);border-radius:999px;padding:1px 7px;}
 .tag-overdue{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#17201A;background:var(--red);border-radius:999px;padding:1px 7px;}
 .due-groups{display:flex;flex-direction:column;gap:12px;}
@@ -1755,14 +1757,14 @@ function renderChecking(){
 
   const unpaid = data.pay.filter(r=>r.type==='bill' && !r.paid).sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
   const itemsHtml = (bills, payDate) => bills.length
-    ? bills.map(r=>`<div class="due-item">
+    ? bills.map(r=>`<div class="due-item${r.paid ? ' is-paid' : ''}">
         <span class="nm">${escapeHtml(r.name)}</span>
-        ${(r.dueDate||'') < c.today ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>`
+        ${r.paid ? '<span class="tag-paid">paid</span>' : (r.dueDate||'') < c.today ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>`
           : (payDate && (r.dueDate||'') < payDate) ? `<span class="tag-early" title="this bill is due before the paycheck it's set to">due before payday</span>` : ''}
         <span class="dt">${r.dueDate ? shortDate(r.dueDate) : '—'}</span>
         <span class="am">${money(r.amount)}</span>
       </div>`).join('')
-    : '<div class="ck-empty">Nothing unpaid here. 🎉</div>';
+    : '<div class="ck-empty">No bills set to this paycheck.</div>';
 
   // Each paycheck section shows two numbers:
   //   Predicted left over = payday − that paycheck's bills
@@ -1771,18 +1773,26 @@ function renderChecking(){
   const groups = [];
   const cls = n => n<0 ? 'bad' : 'good';
   allIncomes.forEach((inc,i)=>{
-    const bills = i===0 ? c.due : unpaid.filter(r=>r.paycheckId===inc.id);
-    const total = round2(bills.reduce((s,r)=>s+r.amount,0));
-    const predicted = round2(inc.amount - total);
+    // every bill on this paycheck, paid or not: paid ones still came out of this paycheck
+    const incIds = new Set(allIncomes.map(x=>x.id));
+    const allBills = data.pay
+      .filter(r=>r.type==='bill' && (r.paycheckId===inc.id || (i===0 && !incIds.has(r.paycheckId))))
+      .sort((a,b)=>(a.paid===b.paid ? 0 : a.paid ? 1 : -1) || (a.dueDate||'').localeCompare(b.dueDate||''));
+    const bills = allBills.filter(r=>!r.paid);
+    const total = round2(bills.reduce((s,r)=>s+r.amount,0));                // still to pay
+    const allTotal = round2(allBills.reduce((s,r)=>s+r.amount,0));          // everything taken out
+    const paidTotal = round2(allTotal - total);
+    // Predicted = payday − every bill on it. Actual = checking − bills not paid yet (paid ones are already gone from checking).
+    const predicted = round2(inc.amount - allTotal);
     const actual = c.has ? round2(c.balance - total) : null;
     groups.push(dueGroupHtml(inc.id, paycheckColor(inc.id, allIncomes),
       `${escapeHtml(inc.name)} · ${shortDate(inc.date)}`,
-      `${inc.paid ? 'received · ' : ''}bills set to this paycheck · ${bills.length} bill${bills.length===1?'':'s'}`,
+      `${inc.paid ? 'received · ' : ''}${bills.length} to pay${allBills.length > bills.length ? ` · ${allBills.length - bills.length} paid` : ''}`,
       total,
       `predicted <b class="${cls(predicted)}">${money(predicted)}</b>${actual!==null ? ` · actual <b class="${cls(actual)}">${money(actual)}</b>` : ''}`,
-      itemsHtml(bills, inc.date)
-        + `<div class="dg-foot"><span>Predicted left over<small>${money(inc.amount)} payday − ${money(total)} bills</small></span><b class="${cls(predicted)}">${money(predicted)}</b></div>`
-        + `<div class="dg-foot"><span>Actual left over<small>${c.has ? `${money(c.balance)} in checking − ${money(total)} bills` : 'add your checking balance above'}</small></span><b class="${actual!==null ? cls(actual) : ''}">${actual!==null ? money(actual) : '—'}</b></div>`));
+      itemsHtml(allBills, inc.date)
+        + `<div class="dg-foot"><span>Predicted left over<small>${money(inc.amount)} payday − ${money(allTotal)} all bills${paidTotal ? ` (${money(paidTotal)} already paid)` : ''}</small></span><b class="${cls(predicted)}">${money(predicted)}</b></div>`
+        + `<div class="dg-foot"><span>Actual left over<small>${c.has ? `${money(c.balance)} in checking − ${money(total)} still to pay` : 'add your checking balance above'}</small></span><b class="${actual!==null ? cls(actual) : ''}">${actual!==null ? money(actual) : '—'}</b></div>`));
   });
   if(!allIncomes.length) groups.push(dueGroupHtml('none', 'var(--teal)', 'Unpaid bills', 'add a paycheck to the Payment Schedule to split these up', c.dueTotal, '', itemsHtml(c.due)));
   document.getElementById('ckDueHead').textContent = 'Bills by paycheck';
