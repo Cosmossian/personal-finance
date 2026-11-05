@@ -457,8 +457,8 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
     <div class="label">Available right now</div>
     <div class="amount" id="heroAmount">$0.00</div>
     <div class="hero-row">
-      <div class="hero-stat">Income<b id="statIncome">$0</b></div>
-      <div class="hero-stat">Paid so far<b id="statBills">$0</b></div>
+      <div class="hero-stat">In checking<b id="statChecking">$0</b></div>
+      <div class="hero-stat">In savings<b id="statSavings">$0</b></div>
       <div class="hero-stat">Still to pay<b id="statUnpaid">$0</b></div>
     </div>
   </div>
@@ -1574,17 +1574,12 @@ function renderHero(){
   const paidBills = data.pay.filter(r=>r.type==='bill' && r.paid).reduce((s,r)=>s+r.amount,0);
   const unpaidBills = data.pay.filter(r=>r.type==='bill' && !r.paid).reduce((s,r)=>s+r.amount,0);
   const expTotal = computeExpTotal();
-  // live figure: only money that's actually gone out the door (paid bills + subscriptions)
-  // counts against what's available — unpaid bills don't reduce it until you check them off
+  // planned leftover for the month (income − paid bills − subscriptions). Not shown any more,
+  // but "Advance a month" still adds it to the Savings Runway, so it's still returned.
   const left = income - paidBills - expTotal;
-  const amt = document.getElementById('heroAmount');
-  amt.textContent = money(left);
-  amt.classList.toggle('neg', left<0);
-  document.getElementById('statIncome').textContent = money(income);
-  document.getElementById('statBills').textContent = money(paidBills + expTotal);
   document.getElementById('statUnpaid').textContent = money(unpaidBills);
   renderChecking();
-  renderAccounts();
+  renderAccounts();   // also redraws the big "Available right now" number
   return left;
 }
 
@@ -1859,8 +1854,23 @@ function savingsBalance(){
   return fins.length ? fins[fins.length-1] : 0;
 }
 
+// "Available right now" = what's actually in checking + savings
+function renderHeroTotal(){
+  const ck = data.checking || {};
+  const hasCk = typeof ck.balance==='number' && !isNaN(ck.balance);
+  const checking = hasCk ? ck.balance : 0;
+  const savings = savingsBalance();
+  const total = round2(checking + savings);
+  const amt = document.getElementById('heroAmount');
+  amt.textContent = money(total);
+  amt.classList.toggle('neg', total < 0);
+  document.getElementById('statChecking').textContent = hasCk ? money(checking) : '—';
+  document.getElementById('statSavings').textContent = money(savings);
+}
+
 function renderAccounts(){
   if(!data || !document.getElementById('acctChecking')) return;
+  renderHeroTotal();
   // Checking
   const c = computeChecking();
   const ckAmt = document.getElementById('acctChecking');
