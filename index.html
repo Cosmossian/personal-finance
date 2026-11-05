@@ -1700,9 +1700,10 @@ function computeChecking(){
   const incs = incomeRows();
   const first = incs[0] || null;
   const incIds = new Set(incs.map(i=>i.id));
-  // "Held over" is automatic: any unpaid bill due before the paycheck it's set to gets paid with money
-  // kept from last month. One setting (data.checking.heldIn) says where that money is kept.
-  // Kept in checking → it's reserved out of the checking balance. Kept in savings → checking isn't touched.
+  // "Held over" is automatic: an unpaid bill due before the paycheck it's set to means that paycheck sets money
+  // aside for the bill's NEXT due date (e.g. Nov 23 paycheck covers the Dec 2 bill; Nov 2's was already paid
+  // with last month's held money). So it's never "overdue". One setting (data.checking.heldIn) says where the
+  // set-aside money is kept. It only touches checking once that paycheck is ticked received AND it's kept in checking.
   const heldIn = ck.heldIn === 'savings' ? 'savings' : 'checking';
   const payDateOf = id => (incs.find(i=>i.id===id) || {}).date || null;
   const unpaidBills = data.pay.filter(r=>r.type==='bill' && !r.paid);
@@ -1713,14 +1714,18 @@ function computeChecking(){
   const due = unpaidBills
     .filter(r=>onFirst(r) && !heldIds.has(r.id))
     .sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
-  const heldFromChecking = heldIn==='checking' ? heldTotal : 0;
+  const nextDueOf = r => { const pd = payDateOf(r.paycheckId); let d = r.dueDate || pd; let n = 0; while(pd && d < pd && n++ < 24) d = addMonths(d, 1); return d; };
+  const nextDue = {}; held.forEach(r=>{ nextDue[r.id] = nextDueOf(r); });
+  const receivedIds = new Set(incs.filter(i=>i.paid).map(i=>i.id));
+  const heldFromChecking = heldIn==='checking'
+    ? round2(held.filter(r=>receivedIds.has(r.paycheckId)).reduce((s,r)=>s+r.amount,0)) : 0;
   const dueTotal = round2(due.reduce((s,r)=>s+r.amount,0) + heldFromChecking);  // everything that has to come out of checking now
   const has = typeof ck.balance==='number' && !isNaN(ck.balance);
   const cushion = ck.cushion || 0;
   const safe = has ? round2(ck.balance - dueTotal - cushion) : null;
   const days = next ? daysBetween(today, next.date) : null;
   const firstBillsTotal = round2(dueTotal - heldFromChecking);
-  return {has, balance:ck.balance, cushion, next, first, due, dueTotal, firstBillsTotal, held, heldIds, heldTotal, heldIn, heldFromChecking, safe, days, today};
+  return {has, balance:ck.balance, cushion, next, first, due, dueTotal, firstBillsTotal, held, heldIds, heldTotal, heldIn, heldFromChecking, nextDue, incs, safe, days, today};
 }
 
 function renderChecking(){
@@ -1768,8 +1773,17 @@ function renderChecking(){
     daysEl.innerHTML = 'No upcoming payday left on the schedule. Advance a month when you\u2019re ready for the next one.';
   }
   if(c.held.length){
-    daysEl.innerHTML += `<div class="ck-held">Held over for <b>${c.held.length}</b> bill${c.held.length===1?'':'s'} due before their payday: <b>${money(c.heldTotal)}</b><br>
-      Keep it in <select id="ckHeldIn" class="${c.heldIn==='savings'?'method-savings':'method-direct'}">
+    // one reminder line per paycheck that has to set money aside for next month's early bills
+    const lines = c.incs.map(inc=>{
+      const hs = c.held.filter(r=>r.paycheckId===inc.id);
+      if(!hs.length) return '';
+      const amt = round2(hs.reduce((s,r)=>s+r.amount,0));
+      const dates = hs.map(r=>c.nextDue[r.id]).sort();
+      const range = dates[0]===dates[dates.length-1] ? shortDate(dates[0]) : `${shortDate(dates[0])} – ${shortDate(dates[dates.length-1])}`;
+      return `<div>${inc.paid ? '✓ ' : ''}From <b style="font-family:var(--body)">${escapeHtml(inc.name)}</b> (${shortDate(inc.date)}): set aside <b>${money(amt)}</b> for ${hs.length} bill${hs.length===1?'':'s'} due ${range}${inc.paid ? (c.heldIn==='savings' ? ' · move it to savings' : ' · keeping it in checking') : ''}</div>`;
+    }).join('');
+    daysEl.innerHTML += `<div class="ck-held">Next month's early bills:${lines}
+      Keep that money in <select id="ckHeldIn" class="${c.heldIn==='savings'?'method-savings':'method-direct'}">
         <option value="checking" ${c.heldIn==='checking'?'selected':''}>checking</option>
         <option value="savings" ${c.heldIn==='savings'?'selected':''}>savings</option>
       </select></div>`;
@@ -1788,10 +1802,10 @@ function renderChecking(){
     ? bills.map(r=>`<div class="due-item${r.paid ? ' is-paid' : ''}">
         <span class="nm">${escapeHtml(r.name)}</span>
         ${r.paid ? '<span class="tag-paid">paid</span>' : [
-            (r.dueDate||'') < c.today ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : '',
-            c.heldIds.has(r.id) ? `<span class="tag-held ${c.heldIn}" title="due before its paycheck, so it's paid with money held over from last month (kept in ${c.heldIn})">held over · ${c.heldIn}</span>` : ''
+            (!c.heldIds.has(r.id) && (r.dueDate||'') < c.today) ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : '',
+            c.heldIds.has(r.id) ? `<span class="tag-held ${c.heldIn}" title="due before this paycheck, so this paycheck sets money aside for next month's bill (kept in ${c.heldIn}). Pay By in the schedule: ${shortDate(r.dueDate)}">set aside · ${c.heldIn}</span>` : ''
           ].join('')}
-        <span class="dt">${r.dueDate ? shortDate(r.dueDate) : '—'}</span>
+        <span class="dt">${c.heldIds.has(r.id) ? shortDate(c.nextDue[r.id]) : r.dueDate ? shortDate(r.dueDate) : '—'}</span>
         <span class="am">${money(r.amount)}</span>
       </div>`).join('')
     : '<div class="ck-empty">No bills set to this paycheck.</div>';
