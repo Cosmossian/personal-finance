@@ -145,8 +145,6 @@ select{font-family:var(--mono);font-size:11px;background:var(--surface-2);border
 select:focus{outline:none;border-color:var(--gold);}
 select.method-direct{color:var(--vault);border-color:rgba(61,186,112,.6);}
 select.method-savings{color:var(--gold);border-color:rgba(245,180,0,.6);}
-select.method-held-checking{color:var(--teal);border-color:rgba(60,199,193,.6);}
-select.method-held-savings{color:var(--plum);border-color:rgba(160,123,224,.6);}
 .debt-row{display:flex;align-items:center;gap:6px;margin-top:4px;}
 .debt-row .dim{font-size:10px;text-transform:uppercase;letter-spacing:.05em;}
 .amt-wrap.small{width:90px;}
@@ -786,6 +784,7 @@ function loadFromCloud(){
     data = (docSnap.exists && docSnap.data()) ? docSnap.data() : defaultData();
     if(data.debitLeftover===undefined) data.debitLeftover = null;
     if(!data.checking) data.checking = {balance:null, cushion:0, updated:null};
+    if(data.checking.heldIn !== 'savings') data.checking.heldIn = 'checking';
     if(!Array.isArray(data.goals)) data.goals = [];
     data.pay.forEach(r=>{
       if(r.type==='bill' && !r.dueDate) r.dueDate = r.date || todayISO();
@@ -795,6 +794,8 @@ function loadFromCloud(){
       if(r.type==='bill' && r.debtBalance===undefined) r.debtBalance = 0;
       if(r.type==='bill' && r.isCredit===undefined) r.isCredit = (r.method==='credit'); // carry over from the old credit-as-method scheme if present
       if(r.type==='bill' && r.method==='credit') r.method = 'direct'; // "credit" is no longer a Pay From option
+      if(r.type==='bill' && r.method==='held-checking') r.method = 'direct';   // held over is automatic now (see computeChecking)
+      if(r.type==='bill' && r.method==='held-savings') r.method = 'savings';
     });
     render();
     updateUndoButtonState();
@@ -984,8 +985,7 @@ function renderPay(){
       methodCell = `<select data-f="method" class="method-${row.method}">
           <option value="direct" ${row.method==='direct'?'selected':''}>pay directly</option>
           <option value="savings" ${row.method==='savings'?'selected':''}>into savings</option>
-          <option value="held-checking" ${row.method==='held-checking'?'selected':''}>held over · checking</option>
-          <option value="held-savings" ${row.method==='held-savings'?'selected':''}>held over · savings</option>
+
         </select>`;
       const linkedPaycheck = incomes.find(inc=>inc.id===row.paycheckId);
       payDateCell = linkedPaycheck ? `<span class="dim">${shortDate(linkedPaycheck.date)}</span>` : '<span class="dim">—</span>';
@@ -1078,7 +1078,7 @@ function renderPay(){
         }
         else row[field] = el.value;
         if(field==='name') autoGrow(el);
-        if(field==='type' || field==='paycheckId' || field==='isCredit' || field==='method'){ renderPay(); } // isCredit needs to refresh to show/hide the balance field; Pay Date needs to refresh to match the newly picked paycheck
+        if(field==='type' || field==='paycheckId' || field==='isCredit'){ renderPay(); } // isCredit needs to refresh to show/hide the balance field; Pay Date needs to refresh to match the newly picked paycheck
         renderHero(); renderBalance(); renderPlanning(); queueSave();
       });
       if(field==='debtBalance') el.addEventListener('blur', ()=> { el.value = (row.debtBalance||0).toFixed(2); });
@@ -1700,24 +1700,27 @@ function computeChecking(){
   const incs = incomeRows();
   const first = incs[0] || null;
   const incIds = new Set(incs.map(i=>i.id));
-  // "Held over" bills are paid with money kept from last month: held · checking money is already sitting
-  // in checking (so it's reserved there, whatever paycheck it's listed under); held · savings money isn't in checking.
+  // "Held over" is automatic: any unpaid bill due before the paycheck it's set to gets paid with money
+  // kept from last month. One setting (data.checking.heldIn) says where that money is kept.
+  // Kept in checking → it's reserved out of the checking balance. Kept in savings → checking isn't touched.
+  const heldIn = ck.heldIn === 'savings' ? 'savings' : 'checking';
+  const payDateOf = id => (incs.find(i=>i.id===id) || {}).date || null;
   const unpaidBills = data.pay.filter(r=>r.type==='bill' && !r.paid);
   const onFirst = r => !first || r.paycheckId===first.id || !incIds.has(r.paycheckId);
+  const held = unpaidBills.filter(r=>{ const pd = payDateOf(r.paycheckId); return pd && (r.dueDate||'') < pd; });
+  const heldIds = new Set(held.map(r=>r.id));
+  const heldTotal = round2(held.reduce((s,r)=>s+r.amount,0));
   const due = unpaidBills
-    .filter(r=>onFirst(r) && r.method!=='held-checking' && r.method!=='held-savings')
+    .filter(r=>onFirst(r) && !heldIds.has(r.id))
     .sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
-  const heldChecking = unpaidBills.filter(r=>r.method==='held-checking');
-  const heldSavings = unpaidBills.filter(r=>r.method==='held-savings');
-  const heldCheckingTotal = round2(heldChecking.reduce((s,r)=>s+r.amount,0));
-  const heldSavingsTotal = round2(heldSavings.reduce((s,r)=>s+r.amount,0));
-  const dueTotal = round2(due.reduce((s,r)=>s+r.amount,0) + heldCheckingTotal);  // everything that has to come out of checking now
+  const heldFromChecking = heldIn==='checking' ? heldTotal : 0;
+  const dueTotal = round2(due.reduce((s,r)=>s+r.amount,0) + heldFromChecking);  // everything that has to come out of checking now
   const has = typeof ck.balance==='number' && !isNaN(ck.balance);
   const cushion = ck.cushion || 0;
   const safe = has ? round2(ck.balance - dueTotal - cushion) : null;
   const days = next ? daysBetween(today, next.date) : null;
-  const firstBillsTotal = round2(dueTotal - heldCheckingTotal);
-  return {has, balance:ck.balance, cushion, next, first, due, dueTotal, firstBillsTotal, heldChecking, heldSavings, heldCheckingTotal, heldSavingsTotal, safe, days, today};
+  const firstBillsTotal = round2(dueTotal - heldFromChecking);
+  return {has, balance:ck.balance, cushion, next, first, due, dueTotal, firstBillsTotal, held, heldIds, heldTotal, heldIn, heldFromChecking, safe, days, today};
 }
 
 function renderChecking(){
@@ -1744,13 +1747,13 @@ function renderChecking(){
   card.classList.toggle('neg', c.has && c.safe < 0);
   if(!c.has){
     safeEl.textContent = 'Add your balance to see this';
-    math.innerHTML = `<div class="ln">− ${untilLabel}<b>${money(c.firstBillsTotal)}</b></div>${c.heldCheckingTotal ? `<div class="ln">− held over in checking<b>${money(c.heldCheckingTotal)}</b></div>` : ''}`;
+    math.innerHTML = `<div class="ln">− ${untilLabel}<b>${money(c.firstBillsTotal)}</b></div>${c.heldFromChecking ? `<div class="ln">− held over in checking<b>${money(c.heldFromChecking)}</b></div>` : ''}`;
   } else {
     safeEl.textContent = money(c.safe);
     math.innerHTML = `
       <div class="ln">In checking<b>${money(c.balance)}</b></div>
       <div class="ln">− ${untilLabel}<b>${money(c.firstBillsTotal)}</b></div>
-      ${c.heldCheckingTotal ? `<div class="ln">− held over in checking<b>${money(c.heldCheckingTotal)}</b></div>` : ''}
+      ${c.heldFromChecking ? `<div class="ln">− held over in checking<b>${money(c.heldFromChecking)}</b></div>` : ''}
       ${c.cushion ? `<div class="ln">− cushion<b>${money(c.cushion)}</b></div>` : ''}
       <div class="ln total">${c.safe<0 ? 'Short by' : 'Yours to spend'}<b>${money(Math.abs(c.safe))}</b></div>`;
   }
@@ -1764,10 +1767,16 @@ function renderChecking(){
   } else {
     daysEl.innerHTML = 'No upcoming payday left on the schedule. Advance a month when you\u2019re ready for the next one.';
   }
-  if(c.heldCheckingTotal || c.heldSavingsTotal){
-    daysEl.innerHTML += `<div class="ck-held">Held over for early bills:<br>
-      ${c.heldCheckingTotal ? `<span class="k">Keep in checking</span> <b>${money(c.heldCheckingTotal)}</b> (${c.heldChecking.length} bill${c.heldChecking.length===1?'':'s'})<br>` : ''}
-      ${c.heldSavingsTotal ? `<span class="s">Keep in savings</span> <b>${money(c.heldSavingsTotal)}</b> (${c.heldSavings.length} bill${c.heldSavings.length===1?'':'s'})` : ''}</div>`;
+  if(c.held.length){
+    daysEl.innerHTML += `<div class="ck-held">Held over for <b>${c.held.length}</b> bill${c.held.length===1?'':'s'} due before their payday: <b>${money(c.heldTotal)}</b><br>
+      Keep it in <select id="ckHeldIn" class="${c.heldIn==='savings'?'method-savings':'method-direct'}">
+        <option value="checking" ${c.heldIn==='checking'?'selected':''}>checking</option>
+        <option value="savings" ${c.heldIn==='savings'?'selected':''}>savings</option>
+      </select></div>`;
+    document.getElementById('ckHeldIn').addEventListener('change', e=>{
+      data.checking.heldIn = e.target.value === 'savings' ? 'savings' : 'checking';
+      renderChecking(); renderAccounts(); queueSave();
+    });
   }
 
   // Bills grouped by which money covers them: checking now (see computeChecking), then each upcoming
@@ -1780,9 +1789,7 @@ function renderChecking(){
         <span class="nm">${escapeHtml(r.name)}</span>
         ${r.paid ? '<span class="tag-paid">paid</span>' : [
             (r.dueDate||'') < c.today ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : '',
-            r.method==='held-checking' ? '<span class="tag-held checking" title="paid with money held over from last month, kept in checking">held · checking</span>'
-              : r.method==='held-savings' ? '<span class="tag-held savings" title="paid with money held over from last month, kept in savings">held · savings</span>'
-              : ((r.dueDate||'') >= c.today && payDate && (r.dueDate||'') < payDate) ? `<span class="tag-early" title="this bill is due before the paycheck it's set to">due before payday</span>` : ''
+            c.heldIds.has(r.id) ? `<span class="tag-held ${c.heldIn}" title="due before its paycheck, so it's paid with money held over from last month (kept in ${c.heldIn})">held over · ${c.heldIn}</span>` : ''
           ].join('')}
         <span class="dt">${r.dueDate ? shortDate(r.dueDate) : '—'}</span>
         <span class="am">${money(r.amount)}</span>
@@ -1807,8 +1814,8 @@ function renderChecking(){
     const paidTotal = round2(allTotal - total);
     // Predicted = payday − every bill on it. Actual = checking − bills not paid yet (paid ones are already gone from checking).
     const predicted = round2(inc.amount - allTotal);
-    // held · savings bills don't come out of checking, so Actual leaves them out
-    const heldSavTotal = round2(bills.filter(r=>r.method==='held-savings').reduce((s,r)=>s+r.amount,0));
+    // held-over money kept in savings doesn't come out of checking, so Actual leaves those bills out
+    const heldSavTotal = c.heldIn==='savings' ? round2(bills.filter(r=>c.heldIds.has(r.id)).reduce((s,r)=>s+r.amount,0)) : 0;
     const fromChecking = round2(total - heldSavTotal);
     const actual = c.has ? round2(c.balance - fromChecking) : null;
     groups.push(dueGroupHtml(inc.id, paycheckColor(inc.id, allIncomes),
