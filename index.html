@@ -1686,7 +1686,8 @@ function dueGroupHtml(key, color, title, sub, total, peek, bodyHtml){
 function computeChecking(){
   const ck = data.checking || {};
   const today = localToday();
-  const next = incomeRows().find(i=>i.date > today) || null;
+  // next payday = the first paycheck still to come that isn't ticked Paid (received) yet
+  const next = incomeRows().find(i=>i.date > today && !i.paid) || null;
   // Every bill belongs to the paycheck picked for it in the Payment Schedule.
   // Safe to spend comes off the first paycheck on the schedule (Payday 1): checking − its unpaid bills − cushion.
   // Bills with no paycheck (or one that no longer exists) are counted with Payday 1 so nothing gets missed.
@@ -1745,7 +1746,7 @@ function renderChecking(){
     if(c.has && c.safe > 0 && c.days > 0) perDay = `<br>That's about <b>${money(round2(c.safe / c.days))} a day</b> until then.`;
     daysEl.innerHTML = `Next payday: <b>${escapeHtml(c.next.name)}</b> on ${shortDate(c.next.date)}, ${dayWord}.${perDay}`;
   } else {
-    daysEl.innerHTML = 'No upcoming payday on the schedule, so every unpaid bill is counted.';
+    daysEl.innerHTML = 'No upcoming payday left on the schedule. Advance a month when you\u2019re ready for the next one.';
   }
 
   // Bills grouped by which money covers them: checking now (see computeChecking), then each upcoming
@@ -1776,7 +1777,7 @@ function renderChecking(){
     const actual = c.has ? round2(c.balance - total) : null;
     groups.push(dueGroupHtml(inc.id, paycheckColor(inc.id, allIncomes),
       `${escapeHtml(inc.name)} · ${shortDate(inc.date)}`,
-      `bills set to this paycheck · ${bills.length} bill${bills.length===1?'':'s'}`,
+      `${inc.paid ? 'received · ' : ''}bills set to this paycheck · ${bills.length} bill${bills.length===1?'':'s'}`,
       total,
       `predicted <b class="${cls(predicted)}">${money(predicted)}</b>${actual!==null ? ` · actual <b class="${cls(actual)}">${money(actual)}</b>` : ''}`,
       itemsHtml(bills, inc.date)
