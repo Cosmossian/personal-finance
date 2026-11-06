@@ -426,11 +426,36 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
     <div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="22" height="19" rx="3"/><circle cx="16" cy="16.5" r="4.5"/><path d="M16 12v-1M16 22v-1M11.5 16.5h-1M21.5 16.5h-1"/></svg></div>
     <h1 id="authHeading">Sign In</h1>
     <p class="auth-sub" id="authSub">Welcome back — sign in to sync your data across your devices.</p>
-    <input type="email" id="authEmail" placeholder="email" autocomplete="email">
+    <input type="text" id="authEmail" placeholder="email" autocomplete="username" autocapitalize="off">
     <input type="password" id="authPassword" placeholder="password" autocomplete="current-password">
     <div class="auth-error" id="authError"></div>
     <button id="authSubmit" class="advance">Sign In</button>
     <button id="authToggle" class="linkbtn ghost auth-alt">New here? Create an account</button>
+  </div>
+</div>
+
+<div id="statusGate" class="auth-gate" style="display:none;">
+  <div class="auth-card">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="22" height="19" rx="3"/><circle cx="16" cy="16.5" r="4.5"/><path d="M16 12v-1M16 22v-1M11.5 16.5h-1M21.5 16.5h-1"/></svg></div>
+    <h1 id="statusHeading">Opening the Vault…</h1>
+    <p class="auth-sub" id="statusSub"></p>
+    <div class="auth-error" id="statusError"></div>
+    <button id="statusRetry" class="advance" style="display:none;">Try again</button>
+    <button id="statusSignOut" class="linkbtn ghost auth-alt" style="display:none;">Sign out</button>
+  </div>
+</div>
+
+<div id="moveGate" class="auth-gate" style="display:none;">
+  <div class="auth-card">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="22" height="19" rx="3"/><circle cx="16" cy="16.5" r="4.5"/><path d="M16 12v-1M16 22v-1M11.5 16.5h-1M21.5 16.5h-1"/></svg></div>
+    <h1>Move your Vault</h1>
+    <p class="auth-sub">The Vault now uses your main login (the same one as the Kitchen, the Study and the Library). Sign in one last time with your <b>old Vault</b> email and password, and everything gets copied over. The old copy stays where it is as a backup.</p>
+    <input type="email" id="moveEmail" placeholder="old Vault email" autocomplete="off">
+    <input type="password" id="movePassword" placeholder="old Vault password" autocomplete="off">
+    <div class="auth-error" id="moveError"></div>
+    <button id="moveSubmit" class="advance">Move my Vault</button>
+    <button id="moveFresh" class="linkbtn ghost auth-alt">I've never used the Vault: start fresh</button>
+    <button id="moveSignOut" class="linkbtn ghost auth-alt">Sign out</button>
   </div>
 </div>
 
@@ -666,11 +691,15 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-const firebaseConfig = {
+// The Vault saves to Supabase (same project and same login as the Kitchen, the Study and the Library):
+// table vault_ledgers, one row per account (user_id, data jsonb). Set up by vault-setup.sql.
+const SUPABASE_URL = "https://wpgclwmssnmiidvnekml.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZ2Nsd21zc25taWlkdm5la21sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzE4NDUsImV4cCI6MjEwOTE0Nzg0NX0.o19X9l7zS1bk34DpR3id0gt6mAB42ZZb6olRr8ohzTc";
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// The old Firebase project. Only loaded when moving a Vault over from the old login.
+const OLD_FIREBASE = {
   apiKey: "AIzaSyAqZ-q3TXXUyGh_LDc9IunuM9r9032tJEE",
   authDomain: "personal-finance-670e5.firebaseapp.com",
   projectId: "personal-finance-670e5",
@@ -678,9 +707,6 @@ const firebaseConfig = {
   messagingSenderId: "972647293934",
   appId: "1:972647293934:web:6203b2f8a7ebd2c8dca4ff"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
 let currentUid = null;
 let undoStack = [];
 const UNDO_LIMIT = 15;
@@ -778,35 +804,76 @@ function defaultData(){
   };
 }
 
-function loadFromCloud(){
-  undoStack = [];
-  db.collection('ledgers').doc(currentUid).get().then(docSnap=>{
-    data = (docSnap.exists && docSnap.data()) ? docSnap.data() : defaultData();
-    if(data.debitLeftover===undefined) data.debitLeftover = null;
-    if(!data.checking) data.checking = {balance:null, cushion:0, updated:null};
-    if(!Array.isArray(data.goals)) data.goals = [];
-    data.pay.forEach(r=>{
-      if(r.type==='bill' && !r.dueDate) r.dueDate = r.date || todayISO();
-      if(r.type==='bill' && !r.method) r.method='direct';
-      if(r.type==='bill' && r.groupId===undefined) r.groupId = null;
-      if(r.type==='bill' && r.payUrl===undefined) r.payUrl = '';
-      if(r.type==='bill' && r.debtBalance===undefined) r.debtBalance = 0;
-      if(r.type==='bill' && r.isCredit===undefined) r.isCredit = (r.method==='credit'); // carry over from the old credit-as-method scheme if present
-      if(r.type==='bill' && r.method==='credit') r.method = 'direct'; // "credit" is no longer a Pay From option
-      if(r.type==='bill' && r.method==='held-checking') r.method = 'direct';   // held over is automatic now (see computeChecking)
-      if(r.type==='bill' && r.method==='held-savings') r.method = 'savings';
-    });
-    render();
-    updateUndoButtonState();
-  }).catch(e=>{
-    console.error('load failed', e);
-    data = defaultData();
-    data.checking = {balance:null, cushion:0, updated:null};
-    data.goals = [];
-    render();
-    updateUndoButtonState();
-    flashSave('couldn\u2019t load your saved data — showing a blank template', true);
+function upgradeData(d){
+  d = d || defaultData();
+  if(d.debitLeftover===undefined) d.debitLeftover = null;
+  if(!d.checking) d.checking = {balance:null, cushion:0, updated:null};
+  if(!Array.isArray(d.goals)) d.goals = [];
+  if(!Array.isArray(d.pay)) d.pay = [];
+  if(!Array.isArray(d.exp)) d.exp = [];
+  if(!Array.isArray(d.sav)) d.sav = [];
+  d.pay.forEach(r=>{
+    if(r.type==='bill' && !r.dueDate) r.dueDate = r.date || todayISO();
+    if(r.type==='bill' && !r.method) r.method='direct';
+    if(r.type==='bill' && r.groupId===undefined) r.groupId = null;
+    if(r.type==='bill' && r.payUrl===undefined) r.payUrl = '';
+    if(r.type==='bill' && r.debtBalance===undefined) r.debtBalance = 0;
+    if(r.type==='bill' && r.isCredit===undefined) r.isCredit = (r.method==='credit'); // carry over from the old credit-as-method scheme if present
+    if(r.type==='bill' && r.method==='credit') r.method = 'direct'; // "credit" is no longer a Pay From option
+    if(r.type==='bill' && r.method==='held-checking') r.method = 'direct';   // held over is automatic now (see computeChecking)
+    if(r.type==='bill' && r.method==='held-savings') r.method = 'savings';
   });
+  return d;
+}
+
+// loadOk guards saving: nothing is ever saved until the real data has loaded,
+// so a failed load can never overwrite the saved Vault with a blank template.
+let loadOk = false;
+function showScreen(name, opts){
+  opts = opts || {};
+  ['authGate','statusGate','moveGate'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('appRoot').style.display = name === 'app' ? '' : 'none';
+  if(name === 'auth') document.getElementById('authGate').style.display = '';
+  if(name === 'move'){
+    document.getElementById('moveGate').style.display = '';
+    document.getElementById('moveError').textContent = '';
+    const me = document.getElementById('moveEmail');
+    if(!me.value && opts.email && opts.email.includes('@') && !/@kids\.thatonedrawer\.com$/.test(opts.email)) me.value = opts.email;
+  }
+  if(name === 'status'){
+    document.getElementById('statusGate').style.display = '';
+    document.getElementById('statusHeading').textContent = opts.heading || 'Opening the Vault…';
+    document.getElementById('statusSub').innerHTML = opts.sub || '';
+    document.getElementById('statusError').textContent = opts.error || '';
+    document.getElementById('statusRetry').style.display = opts.retry ? '' : 'none';
+    document.getElementById('statusSignOut').style.display = opts.retry ? '' : 'none';
+  }
+}
+function isMissingTable(e){ return /42P01|PGRST205|does not exist|could not find the table|schema cache/i.test(String((e && (e.message || e.code)) || '')); }
+
+async function loadFromCloud(){
+  undoStack = [];
+  loadOk = false;
+  showScreen('status');
+  try{
+    const { data: row, error } = await sb.from('vault_ledgers').select('data').eq('user_id', currentUid).maybeSingle();
+    if(error) throw error;
+    if(!row){ showScreen('move', {email: currentEmail}); return; }
+    data = upgradeData(row.data);
+    loadOk = true;
+    showScreen('app');
+    render();
+    updateUndoButtonState();
+  }catch(e){
+    console.error('load failed', e);
+    showScreen('status', isMissingTable(e)
+      ? {heading: 'One-time setup', sub: 'The Vault\u2019s table isn\u2019t in Supabase yet. Run <code>vault-setup.sql</code> in Supabase (SQL Editor \u2192 New query \u2192 paste \u2192 Run), then try again.', retry: true}
+      : {heading: 'Couldn\u2019t open the Vault', sub: 'Your data is safe. Nothing was changed. Check your connection and try again.', error: (e && e.message) || '', retry: true});
+  }
+}
+async function saveRow(d){
+  const { error } = await sb.from('vault_ledgers').upsert({user_id: currentUid, data: d, updated_at: new Date().toISOString()});
+  if(error) throw error;
 }
 
 function flashSave(text, isError){
@@ -821,8 +888,8 @@ function flashSave(text, isError){
 function queueSave(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{
-    if(!currentUid) return;
-    db.collection('ledgers').doc(currentUid).set(data)
+    if(!currentUid || !loadOk) return;
+    saveRow(JSON.parse(JSON.stringify(data)))
       .then(()=> flashSave('saved', false))
       .catch(e=>{
         console.error('save failed', e);
@@ -831,24 +898,39 @@ function queueSave(){
   }, 400);
 }
 
-// --- Auth wiring ---
-auth.onAuthStateChanged(user=>{
-  const gate = document.getElementById('authGate');
-  const app = document.getElementById('appRoot');
+// --- Auth wiring (Supabase: same sign-in as the Kitchen and the Library) ---
+let currentEmail = '';
+function setUser(session){
+  const user = session && session.user;
   if(user){
-    currentUid = user.uid;
-    gate.style.display = 'none';
-    app.style.display = '';
-    loadFromCloud();
+    const changed = currentUid !== user.id;
+    currentUid = user.id; currentEmail = user.email || '';
+    if(changed || !loadOk) loadFromCloud();
   } else {
-    currentUid = null;
-    gate.style.display = '';
-    app.style.display = 'none';
+    currentUid = null; currentEmail = ''; loadOk = false; data = null;
+    showScreen('auth');
   }
-});
+}
+if(sb){
+  sb.auth.getSession().then(r => setUser(r.data.session)).catch(() => setUser(null));
+  sb.auth.onAuthStateChange((event, session) => {
+    if(event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
+    setTimeout(() => setUser(session), 0); // outside Supabase's auth lock
+  });
+} else {
+  showScreen('status', {heading: 'Couldn\u2019t load the sign-in', sub: 'Check your connection and reload the page.'});
+}
+async function signOutAll(){
+  if(!sb) return;
+  await Promise.race([sb.auth.signOut({scope: 'local'}).catch(()=>{}), new Promise(r => setTimeout(r, 4000))]);
+  setUser(null);
+}
 
 function authErrorText(e){
-  return (e && e.message) ? e.message.replace('Firebase: ', '') : 'Something went wrong';
+  const m = String((e && e.message) || '');
+  if(/invalid login/i.test(m)) return 'That email and password don\u2019t match. Use the same login as the Kitchen and the Library.';
+  if(/already registered/i.test(m)) return 'That email already has an account. Sign in instead.';
+  return m.replace('Firebase: ', '') || 'Something went wrong';
 }
 
 let authMode = 'signin';
@@ -861,7 +943,7 @@ function renderAuthMode(){
   document.getElementById('authError').textContent = '';
   if(authMode === 'signin'){
     heading.textContent = 'Sign In';
-    sub.textContent = 'Welcome back — sign in to sync your data across your devices.';
+    sub.textContent = 'Same login as the Kitchen, the Study and the Library.';
     submit.textContent = 'Sign In';
     toggle.textContent = 'New here? Create an account';
   } else {
@@ -877,18 +959,87 @@ document.getElementById('authToggle').addEventListener('click', ()=>{
   renderAuthMode();
 });
 
-document.getElementById('authSubmit').addEventListener('click', ()=>{
-  const email = document.getElementById('authEmail').value.trim();
+document.getElementById('authSubmit').addEventListener('click', async ()=>{
+  let email = document.getElementById('authEmail').value.trim();
   const pw = document.getElementById('authPassword').value;
   const err = document.getElementById('authError');
   err.textContent = '';
-  const action = authMode === 'signin'
-    ? auth.signInWithEmailAndPassword(email, pw)
-    : auth.createUserWithEmailAndPassword(email, pw);
-  action.catch(e=>{ err.textContent = authErrorText(e); });
+  if(!sb){ err.textContent = 'The sign-in didn\u2019t load. Reload the page.'; return; }
+  if(!email || pw.length < 6){ err.textContent = 'Enter your email and password (at least 6 characters).'; return; }
+  if(!email.includes('@')) email = email.toLowerCase() + '@kids.thatonedrawer.com'; // Study usernames
+  const btn = document.getElementById('authSubmit'); btn.disabled = true;
+  try{
+    const res = authMode === 'signin' ? await sb.auth.signInWithPassword({email, password: pw}) : await sb.auth.signUp({email, password: pw});
+    if(res.error) throw res.error;
+    if(authMode !== 'signin' && !res.data.session) err.textContent = 'Account created, but Supabase wants the email confirmed first. Confirm it, then sign in.';
+  }catch(e){ err.textContent = authErrorText(e); }
+  btn.disabled = false;
 });
+document.getElementById('authPassword').addEventListener('keydown', e => { if(e.key === 'Enter') document.getElementById('authSubmit').click(); });
 
-document.getElementById('signOutBtn').addEventListener('click', ()=> auth.signOut());
+// --- Moving a Vault from the old Firebase login (one time) ---
+function loadScript(src){
+  return new Promise((ok, bad) => {
+    if(document.querySelector('script[src="' + src + '"]')) return ok();
+    const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = () => bad(new Error('Couldn\u2019t load the old Vault\u2019s sign-in. Check your connection.'));
+    document.head.appendChild(el);
+  });
+}
+function stableJSON(v){
+  if(Array.isArray(v)) return '[' + v.map(stableJSON).join(',') + ']';
+  if(v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + stableJSON(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+async function moveVault(){
+  const email = document.getElementById('moveEmail').value.trim();
+  const pw = document.getElementById('movePassword').value;
+  const err = document.getElementById('moveError'), btn = document.getElementById('moveSubmit');
+  err.textContent = '';
+  if(!email || !pw){ err.textContent = 'Enter your old Vault email and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in to the old Vault…';
+  let oldApp = null;
+  try{
+    const V = 'https://www.gstatic.com/firebasejs/12.18.0/';
+    await loadScript(V + 'firebase-app-compat.js');
+    await loadScript(V + 'firebase-auth-compat.js');
+    await loadScript(V + 'firebase-firestore-compat.js');
+    oldApp = firebase.apps.find(x => x.name === 'oldVault') || firebase.initializeApp(OLD_FIREBASE, 'oldVault');
+    let cred;
+    try{ cred = await oldApp.auth().signInWithEmailAndPassword(email, pw); }
+    catch(e){ throw new Error(/password|credential|user-not-found|invalid/i.test(String(e.code || e.message)) ? 'That isn\u2019t your old Vault email and password.' : String(e.message || e).replace('Firebase: ', '')); }
+    btn.textContent = 'Copying your Vault…';
+    const snap = await oldApp.firestore().collection('ledgers').doc(cred.user.uid).get();
+    if(!snap.exists || !snap.data()) throw new Error('That old login has no Vault data. If you\u2019ve never used the Vault, start fresh instead.');
+    const copy = JSON.parse(JSON.stringify(snap.data()));
+    await saveRow(copy);
+    btn.textContent = 'Checking the copy…';
+    const { data: back, error } = await sb.from('vault_ledgers').select('data').eq('user_id', currentUid).maybeSingle();
+    if(error) throw error;
+    if(!back || stableJSON(back.data) !== stableJSON(copy)) throw new Error('The copy didn\u2019t match the original, so it wasn\u2019t used. Your old Vault is untouched. Try again.');
+    try{ await oldApp.auth().signOut(); }catch(e){}
+    data = upgradeData(back.data);
+    loadOk = true;
+    showScreen('app'); render(); updateUndoButtonState();
+    flashSave('moved \u2713 your Vault is on your main login now', false);
+  }catch(e){
+    console.error('move failed', e);
+    err.textContent = isMissingTable(e) ? 'Run vault-setup.sql in Supabase first, then try again.' : (e && e.message) || 'Something went wrong. Your old Vault is untouched.';
+    try{ if(oldApp) await oldApp.auth().signOut(); }catch(x){}
+  }
+  btn.disabled = false; btn.textContent = 'Move my Vault';
+}
+document.getElementById('moveSubmit').addEventListener('click', moveVault);
+document.getElementById('movePassword').addEventListener('keydown', e => { if(e.key === 'Enter') moveVault(); });
+document.getElementById('moveFresh').addEventListener('click', async ()=>{
+  if(!confirm('Start a brand-new Vault on this login? Only do this if you\u2019ve never used the Vault before. (Your old Vault, if there is one, stays untouched.)')) return;
+  try{ data = defaultData(); await saveRow(data); data = upgradeData(data); loadOk = true; showScreen('app'); render(); updateUndoButtonState(); }
+  catch(e){ document.getElementById('moveError').textContent = isMissingTable(e) ? 'Run vault-setup.sql in Supabase first, then try again.' : (e.message || 'Couldn\u2019t start a new Vault.'); }
+});
+document.getElementById('moveSignOut').addEventListener('click', signOutAll);
+document.getElementById('statusSignOut').addEventListener('click', signOutAll);
+document.getElementById('statusRetry').addEventListener('click', ()=> loadFromCloud());
+
+document.getElementById('signOutBtn').addEventListener('click', signOutAll);
 document.getElementById('undoBtn').addEventListener('click', undoLast);
 document.getElementById('reloadBtn').addEventListener('click', ()=> location.reload());
 
