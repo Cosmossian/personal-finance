@@ -1611,12 +1611,32 @@ function getCreditRows(){
   return Object.values(grouped);
 }
 
+// What's left once every paycheck still coming is in and every unpaid bill is paid:
+// checking now + paychecks not received − unpaid bills − cushion. Shared by Payment Planning
+// and "Can I justify this purchase?" ("Left once it's all in and paid").
+function cycleEnd(){
+  const r2 = n => Math.round(n*100)/100;
+  const ck = data.checking || {};
+  const has = typeof ck.balance==='number' && !isNaN(ck.balance);
+  const comingPays = incomeRows().filter(i=>!i.paid);
+  const unpaidBills = data.pay.filter(r=>r.type==='bill' && !r.paid);
+  const paysTotal = r2(comingPays.reduce((s,r)=>s+r.amount,0));
+  const billsTotal = r2(unpaidBills.reduce((s,r)=>s+r.amount,0));
+  const cushion = ck.cushion || 0;
+  const endOfCycle = has ? r2(ck.balance + paysTotal - billsTotal - cushion) : null;
+  return {has, balance:ck.balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle};
+}
+
 function computePlanning(){
   const next = getNextPaycheck();
   if(!next) return null;
   const income = incomeRows().reduce((s,r)=>s+r.amount, 0);
   const billsTotal = data.pay.filter(r=>r.type==='bill').reduce((s,r)=>s+r.amount, 0);
-  const calcLeftover = Math.round((income - billsTotal) * 100) / 100;
+  // calculated figure = checking now + paychecks still coming − bills still to pay (most accurate).
+  // Only if no checking balance is entered does it fall back to total income − total bills.
+  const ce = cycleEnd();
+  const fromChecking = ce.endOfCycle !== null;
+  const calcLeftover = fromChecking ? ce.endOfCycle : Math.round((income - billsTotal) * 100) / 100;
   // if you've typed in what's actually in debit, that wins over the calculated figure
   const hasOverride = typeof data.debitLeftover === 'number' && !isNaN(data.debitLeftover);
   const leftover = hasOverride ? Math.round(data.debitLeftover * 100) / 100 : calcLeftover;
@@ -1635,7 +1655,7 @@ function computePlanning(){
       toSavings = leftover;
     }
   }
-  return {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits};
+  return {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits, fromChecking, ce};
 }
 
 function simulatePayoff(credits, extraMonthly, startDate){
@@ -1695,7 +1715,7 @@ function renderPlanning(){
   intro.style.display = 'none';
   body.style.display = '';
 
-  const {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits} = planning;
+  const {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits, fromChecking, ce} = planning;
 
   // keep the debit field in sync (but never overwrite it while you're typing in it)
   const debitInput = document.getElementById('debitInput');
@@ -1705,8 +1725,10 @@ function renderPlanning(){
   debitInput.classList.toggle('active', hasOverride);
   document.getElementById('debitReset').style.display = hasOverride ? '' : 'none';
   document.getElementById('debitHint').textContent = hasOverride
-    ? `calculated would be ${numFmt(calcLeftover)}`
-    : `calculated: ${numFmt(calcLeftover)}. Type what's actually in your debit account to override.`;
+    ? `calculated would be ${numFmt(calcLeftover)}${fromChecking ? ' (from in checking right now − bills)' : ''}`
+    : fromChecking
+      ? `calculated from in checking right now − bills: ${numFmt(calcLeftover)}. Type a number to plan with something else.`
+      : `calculated: ${numFmt(calcLeftover)} (income − bills; enter your checking balance for a better number). Type a number to override.`;
 
   // pie: Bills / Savings(extra) / Credit(extra), as a share of this paycheck
   const pieTotal = billsTotal + toSavings + toCredit || 1;
@@ -1728,7 +1750,10 @@ function renderPlanning(){
   document.getElementById('planningReco').innerHTML = `
     ${hasOverride
       ? `You have <span class="reco-amt">${money(leftover)} in debit right now</span> (you entered this; the calculated figure is ${money(calcLeftover)}).`
-      : `This cycle: ${money(income)} in total income against ${money(billsTotal)} in bills leaves you
+      : fromChecking
+        ? `${money(ce.balance)} in checking now + ${money(ce.paysTotal)} in paychecks still coming − ${money(ce.billsTotal)} in bills still to pay${ce.cushion ? ` − ${money(ce.cushion)} cushion` : ''} leaves you
+    <span class="reco-amt">${money(leftover)} walking-around money</span>`
+        : `This cycle: ${money(income)} in total income against ${money(billsTotal)} in bills leaves you
     <span class="reco-amt">${money(leftover)} walking-around money</span>`}
     ${payoffNote}
     <br><br>
@@ -2146,6 +2171,7 @@ function renderAccounts(){
     }
   }
   document.getElementById('acctCreditSub').innerHTML = crSub;
+  renderPlanning();
   renderJustify();
 }
 
@@ -2269,20 +2295,13 @@ document.getElementById('addGoal').addEventListener('click', ()=>{
 // Then compare what's left after the purchase with the Payment Planning split (extra to credit + to savings).
 // The price and name aren't saved anywhere; they're just for checking.
 function computeJustify(price){
-  const ck = data.checking || {};
-  const has = typeof ck.balance==='number' && !isNaN(ck.balance);
-  const comingPays = incomeRows().filter(i=>!i.paid);
-  const unpaidBills = data.pay.filter(r=>r.type==='bill' && !r.paid);
-  const paysTotal = round2(comingPays.reduce((s,r)=>s+r.amount,0));
-  const billsTotal = round2(unpaidBills.reduce((s,r)=>s+r.amount,0));
-  const cushion = ck.cushion || 0;
-  const endOfCycle = has ? round2(ck.balance + paysTotal - billsTotal - cushion) : null;
+  const {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle} = cycleEnd();
   const p = computePlanning();
   const toCredit = p ? p.toCredit : 0;
   const toSavings = p ? p.toSavings : 0;
   const priority = p && p.credits.length ? p.credits[0] : null;
   const after = endOfCycle!==null ? round2(endOfCycle - (price||0)) : null;
-  return {has, balance:ck.balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, toCredit, toSavings, priority, after,
+  return {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, toCredit, toSavings, priority, after,
           maxKeepAll: endOfCycle!==null ? round2(endOfCycle - toCredit - toSavings) : null,
           maxKeepPlan: endOfCycle!==null ? round2(endOfCycle - toCredit) : null};
 }
