@@ -393,6 +393,10 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .verdict.go{background:var(--vault);} .verdict.nosave{background:var(--gold);} .verdict.cut{background:var(--orange);} .verdict.no{background:var(--red);}
 .verdict.wait{background:var(--surface-2);color:var(--muted);border-color:var(--line);box-shadow:none;}
 .verdict.wait .v-title{color:var(--ink);font-size:18px;}
+.v-alt{display:flex;gap:10px;align-items:flex-start;background:var(--surface-2);border:2px solid var(--line);border-left:6px solid var(--gold);border-radius:14px;padding:10px 14px;margin:-2px 0 12px;font-size:13px;color:var(--muted);line-height:1.45;}
+.v-alt.ok{border-left-color:var(--vault);} .v-alt.bad{border-left-color:var(--red);}
+.v-alt .ic{font-size:16px;line-height:1.2;}
+.v-alt b{color:var(--ink);}
 .jt-math{display:flex;flex-direction:column;gap:5px;font-size:13px;background:var(--surface-2);border:2px solid var(--line);border-radius:14px;padding:12px 14px;}
 .jt-math .ln{display:flex;justify-content:space-between;gap:10px;color:var(--muted);}
 .jt-math .ln b{font-family:var(--mono);font-weight:500;color:var(--ink);white-space:nowrap;}
@@ -582,6 +586,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
       </div>
       <div>
         <div class="verdict wait" id="jtVerdict"><div class="v-title">Type a price</div><div class="v-text">and you'll see if it fits.</div></div>
+        <div class="v-alt" id="jtAlt" style="display:none"></div>
         <div class="jt-math" id="jtMath"></div>
       </div>
     </div>
@@ -2298,6 +2303,8 @@ function renderJustify(){
     ? `${money(j.toCredit)} extra to ${creditName} + ${money(j.toSavings)} to savings`
     : `${money(j.toSavings)} to savings`;
 
+  const alt = document.getElementById('jtAlt');
+  alt.style.display = 'none';
   if(!j.has){
     verdict.className = 'verdict wait';
     verdict.innerHTML = `<div class="v-title">Add your checking balance first</div><div class="v-text">Type what's in checking in the Checking section above, then come back.</div>`;
@@ -2351,6 +2358,19 @@ function renderJustify(){
   }
   verdict.className = 'verdict ' + cls;
   verdict.innerHTML = `<div class="v-title">${title}</div><div class="v-text">${text}</div>`;
+
+  // the "skip savings, just do the payment plan" option, always spelled out when there's a payment plan
+  if(j.priority && j.toCredit > 0){
+    const leftAfterPlan = round2(a - j.toCredit);
+    alt.style.display = '';
+    if(leftAfterPlan >= 0){
+      alt.className = 'v-alt ok';
+      alt.innerHTML = `<span class="ic">✓</span><span><b>If you skip savings and just do the payment plan:</b> it works. After ${what} and the ${money(j.toCredit)} extra to ${creditName}, you'd have ${money(leftAfterPlan)} left${j.toSavings > 0 ? ` (instead of sending ${money(j.toSavings)} to savings)` : ''}.</span>`;
+    } else {
+      alt.className = 'v-alt bad';
+      alt.innerHTML = `<span class="ic">✕</span><span><b>If you skip savings and just do the payment plan:</b> still ${money(-leftAfterPlan)} short. You'd have ${money(Math.max(a,0))} for the ${money(j.toCredit)} extra to ${creditName}.${j.maxKeepPlan > 0 ? ` Spend ${money(j.maxKeepPlan)} or less to make it work.` : ''}</span>`;
+    }
+  }
 }
 document.getElementById('jtPrice').addEventListener('input', renderJustify);
 document.getElementById('jtName').addEventListener('input', renderJustify);
