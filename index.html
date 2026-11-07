@@ -33,6 +33,7 @@
   --sky:#5B9BEF;
   --pink:#FF8DBC;
   --teal:#3CC7C1;
+  --orange:#FF9F43;
   --on-color:#0B140E;
   --display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
   --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -377,6 +378,30 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
   .goals{grid-template-columns:1fr;}
 }
 
+/* ---------- can I justify this purchase ---------- */
+.jt-grid{display:grid;grid-template-columns:minmax(220px,1fr) 1.35fr;gap:18px;align-items:start;}
+.jt-inputs{display:flex;flex-direction:column;gap:6px;}
+.jt-name{width:100%;font-size:15px;padding:9px 12px;border:2px solid var(--line);border-radius:12px;background:var(--surface-2);}
+.jt-name:focus{outline:none;border-color:var(--gold);}
+.jt-limits{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+.jt-limit{display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--surface-2);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12.5px;color:var(--muted);}
+.jt-limit b{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;}
+.jt-limit .dot{width:10px;height:10px;border-radius:50%;border:1.5px solid #000;flex:none;margin-right:8px;display:inline-block;vertical-align:-1px;}
+.verdict{border:2px solid #000;border-radius:16px;padding:14px 16px;color:#0B140E;box-shadow:3px 3px 0 var(--shadow);margin-bottom:12px;}
+.verdict .v-title{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.15;}
+.verdict .v-text{font-size:13.5px;margin-top:4px;line-height:1.45;}
+.verdict.go{background:var(--vault);} .verdict.nosave{background:var(--gold);} .verdict.cut{background:var(--orange);} .verdict.no{background:var(--red);}
+.verdict.wait{background:var(--surface-2);color:var(--muted);border-color:var(--line);box-shadow:none;}
+.verdict.wait .v-title{color:var(--ink);font-size:18px;}
+.jt-math{display:flex;flex-direction:column;gap:5px;font-size:13px;background:var(--surface-2);border:2px solid var(--line);border-radius:14px;padding:12px 14px;}
+.jt-math .ln{display:flex;justify-content:space-between;gap:10px;color:var(--muted);}
+.jt-math .ln b{font-family:var(--mono);font-weight:500;color:var(--ink);white-space:nowrap;}
+.jt-math .ln.total{border-top:1.5px solid var(--line);padding-top:6px;margin-top:2px;color:var(--ink);font-weight:700;}
+.jt-math .ln.total b{font-weight:600;}
+.jt-math .ln.plan{color:var(--ink);}
+.jt-math small{display:block;font-size:11.5px;color:var(--muted);font-weight:400;}
+@media (max-width: 640px){ .jt-grid{grid-template-columns:1fr;} }
+
 @media (max-width: 640px){
   .wrap{padding:18px 10px 100px;}
   .masthead h1{font-size:24px;}
@@ -536,6 +561,29 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
       <div class="ck-due-head" id="ckDueHead"></div>
       <div id="ckDueList"></div>
       <div class="ck-hint">Each bill shows under the Paycheck you picked for it in the Payment Schedule. Paid one? Tick it in the Payment Schedule and update your balance above.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="justifyPanel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--orange)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h3l3 14h13l3-10H10"/><circle cx="13" cy="26" r="2"/><circle cx="23" cy="26" r="2"/></svg></span>
+        <h2>Can I justify this purchase?</h2>
+      </div>
+    </div>
+    <div class="panel-sub">Type a price. It works out what you'll have once every paycheck still coming is in and every bill still to pay is paid, then checks that against your Payment Planning.</div>
+    <div class="jt-grid">
+      <div class="jt-inputs">
+        <label class="field-label" for="jtName">What is it? (optional)</label>
+        <input type="text" class="jt-name" id="jtName" placeholder="e.g. new headphones">
+        <label class="field-label" for="jtPrice">Price</label>
+        <div class="money-input big"><span>$</span><input type="number" step="0.01" min="0" inputmode="decimal" id="jtPrice" placeholder="0.00"></div>
+        <div class="jt-limits" id="jtLimits"></div>
+      </div>
+      <div>
+        <div class="verdict wait" id="jtVerdict"><div class="v-title">Type a price</div><div class="v-text">and you'll see if it fits.</div></div>
+        <div class="jt-math" id="jtMath"></div>
+      </div>
     </div>
   </div>
 
@@ -2093,6 +2141,7 @@ function renderAccounts(){
     }
   }
   document.getElementById('acctCreditSub').innerHTML = crSub;
+  renderJustify();
 }
 
 document.querySelectorAll('.acct[data-go]').forEach(btn=>{
@@ -2208,6 +2257,103 @@ document.getElementById('addGoal').addEventListener('click', ()=>{
   const names = document.querySelectorAll('#goalsBody .goal-name');
   if(names.length) names[names.length-1].focus();
 });
+
+
+// ---------- Can I justify this purchase? ----------
+// End of this cycle = checking now + paychecks not received yet − every bill not paid yet − cushion.
+// Then compare what's left after the purchase with the Payment Planning split (extra to credit + to savings).
+// The price and name aren't saved anywhere; they're just for checking.
+function computeJustify(price){
+  const ck = data.checking || {};
+  const has = typeof ck.balance==='number' && !isNaN(ck.balance);
+  const comingPays = incomeRows().filter(i=>!i.paid);
+  const unpaidBills = data.pay.filter(r=>r.type==='bill' && !r.paid);
+  const paysTotal = round2(comingPays.reduce((s,r)=>s+r.amount,0));
+  const billsTotal = round2(unpaidBills.reduce((s,r)=>s+r.amount,0));
+  const cushion = ck.cushion || 0;
+  const endOfCycle = has ? round2(ck.balance + paysTotal - billsTotal - cushion) : null;
+  const p = computePlanning();
+  const toCredit = p ? p.toCredit : 0;
+  const toSavings = p ? p.toSavings : 0;
+  const priority = p && p.credits.length ? p.credits[0] : null;
+  const after = endOfCycle!==null ? round2(endOfCycle - (price||0)) : null;
+  return {has, balance:ck.balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, toCredit, toSavings, priority, after,
+          maxKeepAll: endOfCycle!==null ? round2(endOfCycle - toCredit - toSavings) : null,
+          maxKeepPlan: endOfCycle!==null ? round2(endOfCycle - toCredit) : null};
+}
+
+function renderJustify(){
+  const priceEl = document.getElementById('jtPrice');
+  if(!data || !priceEl) return;
+  const price = parseFloat(priceEl.value);
+  const hasPrice = !isNaN(price) && price > 0;
+  const name = (document.getElementById('jtName').value || '').trim();
+  const what = name ? escapeHtml(name) : 'this purchase';
+  const j = computeJustify(hasPrice ? price : 0);
+  const verdict = document.getElementById('jtVerdict');
+  const math = document.getElementById('jtMath');
+  const limits = document.getElementById('jtLimits');
+  const creditName = j.priority ? escapeHtml(j.priority.name) : 'credit';
+  const planLabel = j.priority
+    ? `${money(j.toCredit)} extra to ${creditName} + ${money(j.toSavings)} to savings`
+    : `${money(j.toSavings)} to savings`;
+
+  if(!j.has){
+    verdict.className = 'verdict wait';
+    verdict.innerHTML = `<div class="v-title">Add your checking balance first</div><div class="v-text">Type what's in checking in the Checking section above, then come back.</div>`;
+    math.innerHTML = ''; limits.innerHTML = '';
+    return;
+  }
+
+  // the two "most you can spend" limits, always shown
+  const lim = (color, label, amt) => `<div class="jt-limit"><span><span class="dot" style="background:${color}"></span>${label}</span><b>${amt > 0 ? money(amt) : '$0.00'}</b></div>`;
+  limits.innerHTML = lim('var(--vault)', 'Most you can spend and keep the whole plan', j.maxKeepAll)
+    + (j.priority ? lim('var(--gold)', 'Most you can spend and still do the payment plan (no savings)', j.maxKeepPlan) : '');
+
+  const payNames = j.comingPays.map(i=>escapeHtml(i.name)).join(', ');
+  math.innerHTML = `
+    <div class="ln">In checking now<b>${money(j.balance)}</b></div>
+    <div class="ln"><span>+ paychecks still coming${payNames ? `<small>${payNames}</small>` : ''}</span><b>${money(j.paysTotal)}</b></div>
+    <div class="ln">− bills still to pay (${j.unpaidBills.length})<b>${money(j.billsTotal)}</b></div>
+    ${j.cushion ? `<div class="ln">− cushion<b>${money(j.cushion)}</b></div>` : ''}
+    <div class="ln total">Left once it's all in and paid<b>${money(j.endOfCycle)}</b></div>
+    ${hasPrice ? `<div class="ln">− ${what}<b>${money(price)}</b></div>
+    <div class="ln total">Left after buying ${what}<b class="${j.after<0?'neg':''}" style="${j.after<0?'color:var(--red)':''}">${money(j.after)}</b></div>` : ''}
+    <div class="ln plan" style="margin-top:6px"><span>Payment Planning wants<small>${planLabel}</small></span><b>${money(round2(j.toCredit + j.toSavings))}</b></div>`;
+
+  if(!hasPrice){
+    verdict.className = 'verdict wait';
+    verdict.innerHTML = `<div class="v-title">Type a price</div><div class="v-text">and you'll see if it fits.</div>`;
+    return;
+  }
+  const a = j.after, plan = round2(j.toCredit + j.toSavings);
+  let cls, title, text;
+  if(a >= plan){
+    cls = 'go'; title = 'Yes, go for it';
+    text = `After ${what} you'd still have ${money(a)}, enough for the whole plan (${planLabel})${a - plan >= 0.01 ? ` with ${money(round2(a - plan))} to spare` : ''}.`;
+  } else if(j.priority && a >= j.toCredit){
+    const sav = round2(a - j.toCredit);
+    cls = 'nosave';
+    title = sav >= 0.01 ? 'Yes, the payment plan still works' : 'Yes, but no savings this time';
+    text = `You can still pay the ${money(j.toCredit)} extra to ${creditName}. ${sav >= 0.01 ? `Savings would get ${money(sav)} instead of ${money(j.toSavings)}.` : 'Nothing would be left for savings.'}`;
+  } else if(a >= 0){
+    cls = 'cut';
+    if(j.priority){
+      title = 'Only if you cut the payment plan';
+      text = `After ${what} you'd have ${money(a)}: not enough for the ${money(j.toCredit)} extra to ${creditName}, and nothing for savings.`;
+    } else {
+      title = 'Yes, but it eats your savings';
+      text = `After ${what} you'd have ${money(a)} to save instead of ${money(j.toSavings)}.`;
+    }
+  } else {
+    cls = 'no'; title = "Can't justify it right now";
+    text = `You'd be ${money(-a)} short once every bill is paid, before any savings or extra credit payment.`;
+  }
+  verdict.className = 'verdict ' + cls;
+  verdict.innerHTML = `<div class="v-title">${title}</div><div class="v-text">${text}</div>`;
+}
+document.getElementById('jtPrice').addEventListener('input', renderJustify);
+document.getElementById('jtName').addEventListener('input', renderJustify);
 
 </script>
 <script src="/nav.js" defer></script>
