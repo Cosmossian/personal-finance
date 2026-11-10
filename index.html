@@ -331,7 +331,10 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .tag-held.checking{background:var(--teal);} .tag-held.savings{background:var(--plum);}
 .tag-held.payoff{background:var(--gold);}
 .payoff-tag{color:var(--vault) !important;font-weight:700;}
-.po-tag{display:inline-block;margin-left:8px;font-size:10.5px;font-weight:800;color:#0B140E;background:var(--vault);border-radius:999px;padding:1px 8px;vertical-align:middle;}
+.po-tag{display:inline-block;margin-left:8px;font-family:var(--body);font-size:10.5px;font-weight:800;color:#0B140E;background:var(--vault);border:none;border-radius:999px;padding:2px 9px;vertical-align:middle;cursor:pointer;}
+.po-tag .po-x{margin-left:4px;opacity:.6;}
+.po-tag:hover{background:var(--red);}
+.po-tag:hover .po-x{opacity:1;}
 #payoffBody .linkbtn{margin-left:8px;vertical-align:middle;}
 .paidoff-list{margin-top:10px;font-size:13px;color:var(--muted);}
 .paidoff-list b{color:var(--vault);}
@@ -1875,7 +1878,7 @@ function renderPlanning(){
   document.getElementById('payoffBody').innerHTML = results.map(r=>{
     const c = byName[r.name];
     const btn = !c ? '' : c.payingOff
-      ? `<span class="po-tag">✓ paying off this cycle</span>`
+      ? `<button type="button" class="po-tag" data-payoff-cancel="${escapeHtml(c.key)}" title="tap to stop paying it off and put the normal minimum back">✓ paying off this cycle <span class="po-x">✕</span></button>`
       : `<button type="button" class="linkbtn ghost" data-payoff-start="${escapeHtml(c.key)}" title="pay the whole balance this cycle in place of the minimum">pay off this cycle</button>`;
     return `<tr>
       <td>${escapeHtml(r.name)}${btn}</td>
