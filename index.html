@@ -479,6 +479,97 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
   tfoot td{border-top:none;}
 }
 @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+
+/* ---------- Single / Dual income ---------- */
+.view-tabs{display:flex;gap:8px;margin:-6px 0 20px;flex-wrap:wrap;}
+.vtab{font-family:var(--body);font-weight:800;font-size:14px;padding:9px 18px;border:2px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);cursor:pointer;box-shadow:3px 3px 0 var(--shadow);}
+.vtab.on{background:var(--vault);color:var(--on-color);border-color:#000;}
+.share-box{background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:20px;box-shadow:4px 4px 0 var(--shadow);}
+.share-box h3{margin:0 0 4px;font-family:var(--display);font-size:18px;font-weight:800;}
+.share-box p{margin:0 0 10px;font-size:13px;color:var(--muted);line-height:1.5;}
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.share-card{background:var(--surface-2);border:2px solid var(--line-soft);border-radius:14px;padding:12px 14px;}
+.share-card b.t{display:block;font-size:14px;margin-bottom:4px;}
+.share-code{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:.12em;color:var(--gold);margin:6px 0 2px;}
+.share-in{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.share-in input{font-family:var(--mono);font-size:16px;text-transform:uppercase;letter-spacing:.08em;width:150px;padding:8px 10px;border:2px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);}
+.share-name input{font-family:var(--body);font-size:14px;width:180px;padding:6px 9px;border:2px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);}
+.share-err{color:var(--red);font-size:12.5px;margin-top:6px;min-height:1em;}
+.share-line{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;font-size:13.5px;color:var(--muted);}
+.share-line b{color:var(--ink);}
+.dual-switch{display:none;gap:8px;margin-bottom:14px;}
+.dual-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:6px;}
+.person{background:var(--surface);border:2px solid var(--line);border-top:8px solid var(--pc);border-radius:20px;padding:16px 18px;box-shadow:5px 5px 0 var(--shadow);margin-bottom:18px;min-width:0;}
+.person-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.person-head h2{font-family:var(--display);font-size:22px;font-weight:800;margin:0;}
+.person-head .you{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:var(--pc);color:var(--on-color);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;}
+.person-head .upd{font-size:11.5px;color:var(--muted);}
+.p-avail{background:var(--pc);color:var(--on-color);border-radius:16px;padding:12px 14px;margin-bottom:12px;}
+.p-avail .l{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;opacity:.8;}
+.p-avail .a{font-family:var(--display);font-size:34px;font-weight:800;line-height:1.1;}
+.p-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.p-chips span{background:rgba(0,0,0,.14);border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;}
+.p-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.p-card{background:var(--surface-2);border:2px solid var(--line-soft);border-left:5px solid var(--ac);border-radius:12px;padding:8px 10px;min-width:0;}
+.p-card .l{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.p-card .a{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.p-card .s{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35;}
+.p-walk{border:2px solid var(--line-soft);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;color:var(--muted);line-height:1.5;}
+.p-walk .a{font-family:var(--display);font-size:22px;font-weight:800;color:var(--vault);}
+.p-walk .a.bad{color:var(--red);}
+.p-next{font-size:13px;color:var(--muted);margin-bottom:10px;}
+.p-next b{color:var(--ink);}
+.p-groups details{border:2px solid var(--line-soft);border-left:5px solid var(--gc);border-radius:12px;margin-bottom:8px;background:var(--surface-2);}
+.p-groups summary{list-style:none;cursor:pointer;padding:8px 10px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
+.p-groups summary::-webkit-details-marker{display:none;}
+.p-groups .gt{font-weight:800;font-size:13.5px;}
+.p-groups .gs{font-size:11.5px;color:var(--muted);}
+.p-groups .gtot{font-family:var(--mono);font-size:14px;font-weight:600;white-space:nowrap;}
+.p-groups .gb{padding:0 10px 8px;}
+.p-bill{display:flex;gap:8px;align-items:center;font-size:12.5px;padding:4px 0;border-top:1px solid var(--line-soft);}
+.p-bill .nm{flex:1;min-width:0;}
+.p-bill .dt{color:var(--muted);font-family:var(--mono);font-size:11px;}
+.p-bill .am{font-family:var(--mono);}
+.p-bill.paid .nm,.p-bill.paid .am{text-decoration:line-through;opacity:.55;}
+.good{color:var(--vault);} .bad{color:var(--red);}
+.p-edit{margin-top:6px;}
+.cb-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;}
+.cb-tile{background:var(--surface-2);border:2px solid var(--line-soft);border-radius:14px;padding:10px 12px;}
+.cb-tile .l{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.cb-tile .a{font-family:var(--mono);font-size:19px;font-weight:600;margin-top:3px;}
+.cb-tile .s{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+.cb-tile.big{background:var(--vault);color:var(--on-color);border-color:#000;}
+.cb-tile.big .l,.cb-tile.big .s{color:var(--on-color);opacity:.8;}
+.cb-tile.big .a{font-family:var(--display);font-size:26px;font-weight:800;}
+.cb-h{font-family:var(--display);font-size:16px;font-weight:800;margin:18px 0 6px;}
+.cb-note{font-size:12.5px;color:var(--muted);line-height:1.5;}
+.cb-time{width:100%;border-collapse:collapse;font-size:13px;}
+.cb-time td{padding:6px 6px;border-top:1px solid var(--line-soft);vertical-align:middle;}
+.cb-time td.d{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;width:70px;}
+.cb-time td.w{white-space:nowrap;width:1%;}
+.cb-time td.m{font-family:var(--mono);text-align:right;white-space:nowrap;}
+.cb-time td.r{font-family:var(--mono);text-align:right;white-space:nowrap;color:var(--muted);font-size:12px;}
+.cb-time tr.in td.m{color:var(--vault);}
+.cb-time tr.paid td{opacity:.5;}
+.pdot{display:inline-block;font-size:10.5px;font-weight:800;color:var(--on-color);background:var(--pc);border-radius:999px;padding:1px 7px;}
+.cb-goal{display:flex;align-items:center;gap:10px;font-size:13px;padding:6px 0;border-top:1px solid var(--line-soft);}
+.cb-goal .nm{flex:1;min-width:0;}
+.cb-goal .bar{flex:0 0 120px;height:8px;border-radius:99px;background:var(--line-soft);overflow:hidden;}
+.cb-goal .bar i{display:block;height:100%;background:var(--vault);}
+.cb-goal .am{font-family:var(--mono);font-size:12px;white-space:nowrap;}
+.share-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;font-size:11.5px;}
+.share-row select{font-size:11.5px;padding:2px 4px;}
+.share-row .amt-wrap.small input{width:80px;}
+.share-rec{display:inline-flex;align-items:center;gap:4px;color:var(--muted);cursor:pointer;}
+.share-sent{font-size:10.5px;font-weight:800;color:var(--vault);}
+.tag-held.share{background:var(--sky);}
+@media (max-width:900px){
+  .dual-switch{display:flex;}
+  .dual-cols{grid-template-columns:1fr;}
+  .dual-cols .person.hide-sm{display:none;}
+  .share-grid{grid-template-columns:1fr;}
+}
+@media (max-width:520px){ .p-cards{grid-template-columns:1fr;} .cb-time td.r{display:none;} }
 </style>
 </head>
 <body>
@@ -512,6 +603,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
     <div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="22" height="19" rx="3"/><circle cx="16" cy="16.5" r="4.5"/><path d="M16 12v-1M16 22v-1M11.5 16.5h-1M21.5 16.5h-1"/></svg></div>
     <h1>Move your Vault</h1>
     <p class="auth-sub">The Vault now uses your main login (the same one as the Kitchen, the Study and the Library). Sign in one last time with your <b>old Vault</b> email and password, and everything gets copied over. The old copy stays where it is as a backup.</p>
+    <p class="auth-sub"><b>New to the Vault</b> (for example, a partner linking up)? Tap <b>I've never used the Vault: start fresh</b> below.</p>
     <input type="email" id="moveEmail" placeholder="old Vault email" autocomplete="off">
     <input type="password" id="movePassword" placeholder="old Vault password" autocomplete="off">
     <div class="auth-error" id="moveError"></div>
@@ -538,6 +630,12 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
     </div>
   </div>
 
+  <div class="view-tabs" role="tablist">
+    <button type="button" class="vtab" data-view="single" role="tab">Single income</button>
+    <button type="button" class="vtab" data-view="dual" role="tab">Dual income</button>
+  </div>
+
+  <div id="singleView">
   <div class="hero">
     <div class="label">Available right now</div>
     <div class="amount" id="heroAmount">$0.00</div>
@@ -768,6 +866,22 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
   </div>
 
   <div class="foot-note">Your data syncs to your account and recalculates as you type.</div>
+  </div><!-- /singleView -->
+
+  <div id="dualView" style="display:none;">
+    <div id="dualShare"></div>
+    <div class="dual-switch" id="dualSwitch"></div>
+    <div class="dual-cols" id="dualCols"></div>
+    <div class="panel combined" id="combinedPanel">
+      <div class="panel-head">
+        <div class="panel-title">
+          <span class="ptile" style="background:var(--gold)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="16" r="7"/><circle cx="21" cy="16" r="7"/></svg></span>
+          <h2>Combined</h2>
+        </div>
+      </div>
+      <div id="combinedBody"></div>
+    </div>
+  </div>
 </div>
 <div class="saved-flash" id="savedFlash">saved</div>
 <div class="qa-backdrop" id="qaBackdrop" style="display:none;"></div>
@@ -864,6 +978,14 @@ function weekdaysInMonth(year, monthIndex, weekday){
 const isoDate = d => d.toISOString().slice(0,10);
 
 let data = null;
+// Dual income state (see "Dual income" further down)
+let partner = null;          // {uid, data, loadedAt} or null
+let linkState = 'unknown';   // unknown | none | linked | nosetup | error
+let linkError = '';
+let shareCode = null;        // {code, expires}
+let viewMode = 'single';
+try{ viewMode = localStorage.getItem('vault-view') === 'dual' ? 'dual' : 'single'; }catch(e){}
+let dualSide = 'me';
 let saveTimer = null;
 let editingLinkIds = new Set();
 let editingDateIds = new Set();
@@ -958,6 +1080,7 @@ async function loadFromCloud(){
     showScreen('app');
     render();
     updateUndoButtonState();
+    loadPartner();
   }catch(e){
     console.error('load failed', e);
     showScreen('status', isMissingTable(e)
@@ -1003,7 +1126,7 @@ function setUser(session){
     currentUid = user.id; currentEmail = user.email || '';
     if(changed || !loadOk) loadFromCloud();
   } else {
-    currentUid = null; currentEmail = ''; loadOk = false; data = null;
+    currentUid = null; currentEmail = ''; loadOk = false; data = null; partner = null; linkState = 'unknown';
     showScreen('auth');
   }
 }
@@ -1194,6 +1317,7 @@ function render(){
   renderHero();
   renderBalance();
   renderPlanning();
+  renderDual();
 }
 
 function incomeRows(){ return data.pay.filter(r=>r.type==='income').sort((a,b)=>a.date.localeCompare(b.date)); }
@@ -1246,6 +1370,9 @@ function renderPay(){
       if(isMonthlyBillsRow){
         tag += `<span class="split-tag">synced with Monthly Expenditures total</span>`;
       }
+      if(row.mirror){
+        tag += `<span class="split-tag share-tag">your share of ${escapeHtml(partnerName())}'s bill · updates from their Vault</span>`;
+      }
       if(row.payoff){
         tag += `<span class="split-tag payoff-tag">payoff this cycle · covers the ${money(row.payoff.min||0)} minimum</span>`;
       }
@@ -1261,7 +1388,22 @@ function renderPay(){
       if(row.isCredit){
         debtArea = `<div class="debt-row"><span class="dim">balance</span><div class="amt-wrap small"><input type="number" step="0.01" value="${(row.debtBalance||0).toFixed(2)}" data-f="debtBalance"></div></div>`;
       }
-      nameCell = `<textarea class="name-input" data-f="name" rows="1">${escapeHtml(row.name)}</textarea>${tag}${paylinkArea}${debtArea}`;
+      let shareArea = '';
+      if(!row.mirror && (row.split || linkState==='linked')){
+        const pn = escapeHtml(partnerName());
+        if(!row.split){
+          shareArea = `<div class="share-row"><button type="button" class="linkbtn ghost" data-share-on="1" title="you pay the whole bill; ${pn} sends you their part">+ split with ${pn}</button></div>`;
+        } else {
+          const sent = partnerSent(row.id);
+          shareArea = `<div class="share-row"><span class="dim">${pn} pays</span>
+            <select data-share-how><option value="half" ${row.split.how!=='amount'?'selected':''}>half</option><option value="amount" ${row.split.how==='amount'?'selected':''}>an amount</option></select>
+            ${row.split.how==='amount' ? `<div class="amt-wrap small"><input type="number" step="0.01" data-share-amt value="${(row.split.amt||0).toFixed(2)}"></div>` : `<b>${money(shareOf(row))}</b>`}
+            <label class="share-rec" title="tick once their part is in your checking"><input type="checkbox" data-share-rec ${row.split.received?'checked':''}> received</label>
+            ${sent ? `<span class="share-sent">✓ ${pn} marked it sent</span>` : ''}
+            <button type="button" class="linkbtn ghost" data-share-off title="stop splitting this bill">✕</button></div>`;
+        }
+      }
+      nameCell = `<textarea class="name-input" data-f="name" rows="1">${escapeHtml(row.name)}</textarea>${tag}${paylinkArea}${debtArea}${shareArea}`;
     } else {
       paycheckCell = '<span class="dim">—</span>';
       methodCell = '<span class="dim">—</span>';
@@ -1293,6 +1435,18 @@ function renderPay(){
       <td style="text-align:center">${isBill ? `<input type="checkbox" class="chk" ${row.isCredit?'checked':''} data-f="isCredit">` : '<span class="dim">—</span>'}</td>
       <td>${isBill ? '<button class="split" data-sp="1" title="split this bill across another paycheck">split</button>' : ''}<button class="rmv" data-rm="1">×</button></td>
     `;
+    // split with partner controls
+    const shareDone = ()=>{ renderPay(); renderHero(); renderBalance(); renderPlanning(); queueSave(); };
+    const sOn = tr.querySelector('[data-share-on]');
+    if(sOn) sOn.addEventListener('click', ()=>{ row.split = {how:'half', amt:0, received:false}; shareDone(); });
+    const sOff = tr.querySelector('[data-share-off]');
+    if(sOff) sOff.addEventListener('click', ()=>{ delete row.split; shareDone(); });
+    const sHow = tr.querySelector('[data-share-how]');
+    if(sHow) sHow.addEventListener('change', ()=>{ row.split.how = sHow.value; if(sHow.value==='amount' && !row.split.amt) row.split.amt = round2((row.amount||0)/2); shareDone(); });
+    const sAmt = tr.querySelector('[data-share-amt]');
+    if(sAmt) sAmt.addEventListener('input', ()=>{ row.split.amt = parseFloat(sAmt.value)||0; renderHero(); renderBalance(); renderPlanning(); queueSave(); });
+    const sRec = tr.querySelector('[data-share-rec]');
+    if(sRec) sRec.addEventListener('change', ()=>{ row.split.received = sRec.checked; renderHero(); renderBalance(); renderPlanning(); queueSave(); });
     tr.querySelectorAll('[data-f]').forEach(el=>{
       const field = el.dataset.f;
       const ev = (el.tagName==='SELECT' || field==='paid' || field==='isCredit') ? 'change' : 'input';
@@ -1717,8 +1871,11 @@ function cycleEnd(){
   const paysTotal = r2(comingPays.reduce((s,r)=>s+r.amount,0));
   const billsTotal = r2(unpaidBills.reduce((s,r)=>s+r.amount,0));
   const cushion = ck.cushion || 0;
-  const endOfCycle = has ? r2(ck.balance + paysTotal - billsTotal - cushion) : null;
-  return {has, balance:ck.balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle};
+  // split bills: your partner's share is still coming back to you until you tick it received
+  const backs = data.pay.filter(r=>r.type==='bill' && r.split && !r.split.received && shareOf(r) > 0);
+  const backTotal = r2(backs.reduce((s,r)=>s+shareOf(r),0));
+  const endOfCycle = has ? r2(ck.balance + paysTotal + backTotal - billsTotal - cushion) : null;
+  return {has, balance:ck.balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal};
 }
 
 function computePlanning(){
@@ -1861,7 +2018,7 @@ function renderPlanning(){
     ${hasOverride
       ? `You have <span class="reco-amt">${money(leftover)} in debit right now</span> (you entered this; the calculated figure is ${money(calcLeftover)}).`
       : fromChecking
-        ? `${money(ce.balance)} in checking now + ${money(ce.paysTotal)} in paychecks still coming − ${money(ce.billsTotal)} in bills still to pay${ce.cushion ? ` − ${money(ce.cushion)} cushion` : ''} leaves you
+        ? `${money(ce.balance)} in checking now + ${money(ce.paysTotal)} in paychecks still coming${ce.backTotal ? ` + ${money(ce.backTotal)} coming back from ${escapeHtml(partnerName())}` : ''} − ${money(ce.billsTotal)} in bills still to pay${ce.cushion ? ` − ${money(ce.cushion)} cushion` : ''} leaves you
     <span class="reco-amt">${money(leftover)} walking-around money</span>`
         : `This cycle: ${money(income)} in total income against ${money(billsTotal)} in bills leaves you
     <span class="reco-amt">${money(leftover)} walking-around money</span>`}
@@ -2168,7 +2325,8 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
 
   data.pay.forEach(row=>{
     if(row.type==='income'){ row.date = addMonths(row.date, 1); }
-    else { row.dueDate = addMonths(row.dueDate, 1); row.paid = false; }
+    else if(row.mirror){ /* your share of your partner's bill moves when they advance their month */ }
+    else { row.dueDate = addMonths(row.dueDate, 1); row.paid = false; if(row.split) row.split.received = false; }
   });
 
   render();
@@ -2319,6 +2477,8 @@ function renderChecking(){
   const itemsHtml = (bills, payDate) => bills.length
     ? bills.map(r=>`<div class="due-item${r.paid ? ' is-paid' : ''}">
         <span class="nm">${escapeHtml(r.name)}</span>
+        ${r.split ? `<span class="tag-held share" title="split with ${escapeHtml(partnerName())}: ${money(shareOf(r))} comes back to you${r.split.received ? ' (received)' : ''}">split · ${r.split.received ? '✓ ' : ''}${money(shareOf(r))} back</span>` : ''}
+        ${r.mirror ? `<span class="tag-held share" title="your share of ${escapeHtml(partnerName())}'s bill">to ${escapeHtml(partnerName())}</span>` : ''}
         ${r.payoff ? `<span class="tag-held payoff" title="paying this debt off; covers the normal ${money(r.payoff.min||0)} minimum">payoff</span>` : ''}
         ${r.paid ? '<span class="tag-paid">paid</span>' : [
             (!c.heldIds.has(r.id) && (r.dueDate||'') < c.today) ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : '',
@@ -2581,13 +2741,13 @@ document.getElementById('addGoal').addEventListener('click', ()=>{
 // Then compare what's left after the purchase with the Payment Planning split (extra to credit + to savings).
 // The price and name aren't saved anywhere; they're just for checking.
 function computeJustify(price){
-  const {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle} = cycleEnd();
+  const {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal} = cycleEnd();
   const p = computePlanning();
   const toCredit = p ? p.toCredit : 0;
   const toSavings = p ? p.toSavings : 0;
   const priority = p && p.credits.length ? p.credits[0] : null;
   const after = endOfCycle!==null ? round2(endOfCycle - (price||0)) : null;
-  return {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, toCredit, toSavings, priority, after,
+  return {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal, toCredit, toSavings, priority, after,
           maxKeepAll: endOfCycle!==null ? round2(endOfCycle - toCredit - toSavings) : null,
           maxKeepPlan: endOfCycle!==null ? round2(endOfCycle - toCredit) : null};
 }
@@ -2626,6 +2786,7 @@ function renderJustify(){
   math.innerHTML = `
     <div class="ln">In checking now<b>${money(j.balance)}</b></div>
     <div class="ln"><span>+ paychecks still coming${payNames ? `<small>${payNames}</small>` : ''}</span><b>${money(j.paysTotal)}</b></div>
+    ${j.backTotal ? `<div class="ln"><span>+ coming back from ${escapeHtml(partnerName())}<small>${j.backs.map(r=>escapeHtml(r.name)).join(', ')}</small></span><b>${money(j.backTotal)}</b></div>` : ''}
     <div class="ln">− bills still to pay (${j.unpaidBills.length})<b>${money(j.billsTotal)}</b></div>
     ${j.cushion ? `<div class="ln">− cushion<b>${money(j.cushion)}</b></div>` : ''}
     <div class="ln total">Left once it's all in and paid<b>${money(j.endOfCycle)}</b></div>
@@ -2679,6 +2840,333 @@ function renderJustify(){
 }
 document.getElementById('jtPrice').addEventListener('input', renderJustify);
 document.getElementById('jtName').addEventListener('input', renderJustify);
+
+// ================= Dual income: partner link, side by side, combined =================
+// Each person keeps their own ledger (vault_ledgers row). Linked partners can read each other's (vault-share.sql).
+// Split bills: the payer's bill has split {how:'half'|'amount', amt, received}; the partner's ledger gets a
+// matching "Send <name>" bill (mirror {from, billId, due}) made by syncMirrors when they open the Vault.
+// (partner, linkState, viewMode… are declared next to `let data`)
+
+function shareOf(r){
+  if(!r || !r.split) return 0;
+  return r.split.how === 'amount' ? round2(r.split.amt||0) : round2((r.amount||0)/2);
+}
+function withLedger(d, fn){ const keep = data; data = d; try{ return fn(); } finally { data = keep; } }
+function nameOf(d, fallback){ return (d && d.profile && (d.profile.name||'').trim()) || fallback; }
+function myName(){ return nameOf(data, (currentEmail||'').split('@')[0] || 'Me'); }
+function partnerName(){ return nameOf(partner && partner.data, 'Partner'); }
+function partnerSent(billId){
+  if(!partner || !partner.data) return false;
+  const m = partner.data.pay.find(r=>r.mirror && r.mirror.billId===billId && r.mirror.from===currentUid);
+  return !!(m && m.paid);
+}
+function paycheckFor(due){
+  const inc = incomeRows(); let pick = inc[0];
+  inc.forEach(i=>{ if(i.date <= due) pick = i; });
+  return pick ? pick.id : '';
+}
+
+// keep "Send <partner>" bills in step with the partner's split bills
+function syncMirrors(){
+  if(!data || !loadOk) return;
+  const before = JSON.stringify(data.pay.filter(r=>r.mirror));
+  const wanted = {};
+  if(linkState==='linked' && partner && partner.data){
+    partner.data.pay.filter(r=>r.type==='bill' && r.split && shareOf(r) > 0).forEach(r=>{ wanted['m-'+r.id] = r; });
+  }
+  if(linkState==='linked' || linkState==='none'){
+    data.pay = data.pay.filter(r=>!r.mirror || (partner && r.mirror.from===partner.uid && wanted[r.id]));
+  }
+  Object.keys(wanted).forEach(id=>{
+    const b = wanted[id];
+    let m = data.pay.find(r=>r.id===id);
+    if(!m){
+      m = {id, type:'bill', method:'direct', paid:false, groupId:null, payUrl:'', debtBalance:0, isCredit:false, paycheckId: paycheckFor(b.dueDate)};
+      data.pay.push(m);
+    }
+    if(m.mirror && m.mirror.due !== b.dueDate) m.paid = false;   // their bill moved on a month: a new share is owed
+    m.mirror = {from: partner.uid, billId: b.id, due: b.dueDate};
+    m.name = `Send ${partnerName()}: ${b.split.how==='amount' ? 'share' : 'half'} of ${b.name}`;
+    m.amount = shareOf(b);
+    m.dueDate = b.dueDate;
+    if(!m.paycheckId || !incomeRows().some(i=>i.id===m.paycheckId)) m.paycheckId = paycheckFor(b.dueDate);
+  });
+  if(JSON.stringify(data.pay.filter(r=>r.mirror)) !== before){ render(); queueSave(); }
+}
+
+let partnerLoading = false;
+async function loadPartner(){
+  if(!sb || !currentUid || partnerLoading) return;
+  partnerLoading = true;
+  try{
+    const { data: links, error } = await sb.from('vault_links').select('owner,partner');
+    if(error) throw error;
+    const l = (links||[])[0];
+    if(!l){ linkState = 'none'; partner = null; }
+    else {
+      const puid = l.owner===currentUid ? l.partner : l.owner;
+      const { data: row, error: e2 } = await sb.from('vault_ledgers').select('data').eq('user_id', puid).maybeSingle();
+      if(e2) throw e2;
+      linkState = 'linked';
+      partner = {uid: puid, data: row ? upgradeData(row.data) : null, loadedAt: Date.now()};
+    }
+    linkError = '';
+    syncMirrors();
+  }catch(e){
+    console.error('partner load failed', e);
+    if(isMissingTable(e)) linkState = 'nosetup';
+    else { if(linkState==='unknown') linkState = 'error'; linkError = (e && e.message) || 'Couldn’t reach the database'; }
+  }
+  partnerLoading = false;
+  if(viewMode==='single') renderPay();   // shows or hides "split with" on bills
+  renderDual();
+}
+setInterval(()=>{ if(loadOk && viewMode==='dual' && linkState==='linked' && document.visibilityState==='visible') loadPartner(); }, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(loadOk && document.visibilityState==='visible' && linkState!=='nosetup') loadPartner(); });
+
+function makeCode(){
+  const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = '';
+  const r = new Uint32Array(6); crypto.getRandomValues(r);
+  r.forEach(n=>{ c += A[n % A.length]; });
+  return c;
+}
+async function createShareCode(){
+  const err = document.getElementById('shareErr');
+  try{
+    const code = makeCode();
+    const { error } = await sb.from('vault_invites').insert({code});
+    if(error) throw error;
+    shareCode = {code, expires: Date.now() + 24*3600e3};
+    renderDual();
+  }catch(e){ if(err) err.textContent = isMissingTable(e) ? 'Run vault-share.sql in Supabase first.' : ((e && e.message) || 'Couldn’t make a code'); }
+}
+async function redeemShareCode(){
+  const inp = document.getElementById('shareCodeIn'), err = document.getElementById('shareErr');
+  const code = (inp.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(code.length < 6){ err.textContent = 'Type the 6-character code.'; return; }
+  err.textContent = 'Linking…';
+  const { error } = await sb.rpc('vault_redeem', {p_code: code});
+  if(error){ err.textContent = (error.message||'').replace(/^.*?:\s*/,'') || 'That code didn’t work.'; return; }
+  err.textContent = '';
+  await loadPartner();
+  flashSave('linked with ' + partnerName() + ' 🎉', false, 3000);
+}
+async function unlinkPartner(){
+  if(!confirm(`Unlink from ${partnerName()}? You'll stop seeing each other's Vault, and the "Send…" bills from their split bills are removed. Nothing else changes.`)) return;
+  const { error } = await sb.from('vault_links').delete().or(`owner.eq.${currentUid},partner.eq.${currentUid}`);
+  if(error){ flashSave('couldn’t unlink: ' + error.message, true); return; }
+  partner = null; linkState = 'none';
+  syncMirrors(); renderPay(); renderDual();
+}
+
+function setView(v){
+  viewMode = v;
+  try{ localStorage.setItem('vault-view', v); }catch(e){}
+  document.getElementById('singleView').style.display = v==='single' ? '' : 'none';
+  document.getElementById('dualView').style.display = v==='dual' ? '' : 'none';
+  document.querySelectorAll('.view-tabs .vtab').forEach(b=>{ b.classList.toggle('on', b.dataset.view===v); b.setAttribute('aria-selected', b.dataset.view===v); });
+  if(v==='dual'){ renderDual(); if(loadOk && linkState!=='nosetup') loadPartner(); }
+  else if(data) render();
+}
+document.querySelectorAll('.view-tabs .vtab').forEach(b=>b.addEventListener('click', ()=>setView(b.dataset.view)));
+
+// everything one side of the Dual tab needs, worked out with that person's ledger
+function personSummary(d){
+  return withLedger(d, ()=>{
+    const c = computeChecking();
+    const ce = cycleEnd();
+    const sav = savingsBalance();
+    const credits = getCreditRows();
+    const owed = round2(credits.reduce((s,r)=>s+r.debtBalance,0));
+    const p = computePlanning();
+    let debtFree = null, payoff = [];
+    if(p && p.credits.length){
+      payoff = simulatePayoff(p.credits, p.toCredit, new Date(p.next.date+'T00:00:00'));
+      if(payoff.length === p.credits.length) debtFree = payoff[payoff.length-1].date;
+    }
+    const incs = incomeRows();
+    const incIds = new Set(incs.map(i=>i.id));
+    const groups = incs.map((inc,i)=>{
+      const all = d.pay.filter(r=>r.type==='bill' && (r.paycheckId===inc.id || (i===0 && !incIds.has(r.paycheckId))))
+        .sort((a,b)=>(a.paid===b.paid ? 0 : a.paid ? 1 : -1) || (a.dueDate||'').localeCompare(b.dueDate||''));
+      const unpaid = all.filter(r=>!r.paid);
+      const total = round2(unpaid.reduce((s,r)=>s+r.amount,0));
+      const allTotal = round2(all.reduce((s,r)=>s+r.amount,0));
+      const heldSav = round2(unpaid.filter(r=>c.heldIds.has(r.id) && c.catOf(r)==='savings').reduce((s,r)=>s+r.amount,0));
+      return {inc, color: paycheckColor(inc.id, incs), all, unpaid, total, predicted: round2(inc.amount - allTotal), actual: c.has ? round2(c.balance - (total - heldSav)) : null};
+    });
+    const unpaidAll = round2(d.pay.filter(r=>r.type==='bill' && !r.paid).reduce((s,r)=>s+r.amount,0));
+    return {d, c, ce, sav, credits, owed, p, debtFree, payoff, incs, groups, unpaidAll,
+            available: round2((c.has ? c.balance : 0) + sav), goals: d.goals || []};
+  });
+}
+
+function personHtml(S, who, name, color, isMe){
+  const cls = n => n<0 ? 'bad' : 'good';
+  const c = S.c, ce = S.ce;
+  const groups = S.groups.map(g=>`<details style="--gc:${g.color}">
+      <summary><div><div class="gt">${escapeHtml(g.inc.name)} · ${shortDate(g.inc.date)}</div>
+        <div class="gs">${g.inc.paid ? 'received · ' : ''}${g.unpaid.length} to pay${g.all.length>g.unpaid.length ? ` · ${g.all.length-g.unpaid.length} paid` : ''} · predicted <b class="${cls(g.predicted)}">${money(g.predicted)}</b>${g.actual!==null ? ` · actual <b class="${cls(g.actual)}">${money(g.actual)}</b>` : ''}</div></div>
+        <div class="gtot">${money(g.total)}</div></summary>
+      <div class="gb">${g.all.length ? g.all.map(r=>`<div class="p-bill${r.paid?' paid':''}"><span class="nm">${escapeHtml(r.name)}${r.split ? ' <span class="tag-held share">split</span>' : ''}${r.mirror ? ' <span class="tag-held share">transfer</span>' : ''}${r.payoff ? ' <span class="tag-held payoff">payoff</span>' : ''}</span><span class="dt">${shortDate(r.dueDate)}</span><span class="am">${money(r.amount)}</span></div>`).join('') : '<div class="cb-note">No bills on this paycheck.</div>'}</div>
+    </details>`).join('') || '<div class="cb-note">No paychecks on the schedule yet.</div>';
+  const next = c.next ? `Next payday: <b>${escapeHtml(c.next.name)}</b> on ${shortDate(c.next.date)} (${c.days===1 ? 'tomorrow' : `in ${c.days} days`}) · ${money(c.next.amount)}` : 'No payday left on the schedule.';
+  const upd = isMe ? '' : (partner && partner.loadedAt ? `checked ${Math.max(0, Math.round((Date.now()-partner.loadedAt)/60000))} min ago` : '');
+  const ckUpd = S.d.checking && S.d.checking.updated ? `balance from ${shortDate(S.d.checking.updated)}` : '';
+  return `<div class="person${dualSide===who ? '' : ' hide-sm'}" style="--pc:${color}">
+    <div class="person-head"><h2>${escapeHtml(name)}${isMe ? '<span class="you">you</span>' : ''}</h2><span class="upd">${upd}</span></div>
+    <div class="p-avail"><div class="l">Available right now</div><div class="a">${money(S.available)}</div>
+      <div class="p-chips"><span>In checking ${c.has ? money(c.balance) : '—'}</span><span>In savings ${money(S.sav)}</span><span>Still to pay ${money(S.unpaidAll)}</span></div></div>
+    <div class="p-cards">
+      <div class="p-card" style="--ac:var(--teal)"><div class="l">Checking</div><div class="a">${c.has ? money(c.balance) : '—'}</div><div class="s">${c.has ? `safe to spend <b class="${cls(c.safe)}">${money(c.safe)}</b>` : 'no balance entered'}${ckUpd ? `<br>${ckUpd}` : ''}</div></div>
+      <div class="p-card" style="--ac:var(--vault)"><div class="l">Savings</div><div class="a">${money(S.sav)}</div><div class="s">${S.goals.length ? `${S.goals.length} goal${S.goals.length===1?'':'s'}` : 'no goals'}</div></div>
+      <div class="p-card" style="--ac:var(--red)"><div class="l">Credit</div><div class="a">${money(S.owed)}</div><div class="s">${S.credits.length ? `${S.credits.length} debt${S.credits.length===1?'':'s'}${S.debtFree ? ` · debt-free ${monthYear(S.debtFree)}` : ''}` : 'nothing owed'}</div></div>
+    </div>
+    <div class="p-walk">${ce.endOfCycle!==null
+      ? `<span class="a ${ce.endOfCycle<0?'bad':''}">${money(ce.endOfCycle)}</span> walking-around money<br>${money(ce.balance)} in checking + ${money(ce.paysTotal)} paychecks still coming${ce.backTotal ? ` + ${money(ce.backTotal)} coming back` : ''} − ${money(ce.billsTotal)} bills still to pay${ce.cushion ? ` − ${money(ce.cushion)} cushion` : ''}`
+      : 'Walking-around money shows once a checking balance is entered.'}</div>
+    <div class="p-next">${next}</div>
+    <div class="p-groups">${groups}</div>
+    ${isMe ? `<div class="p-edit"><button type="button" class="btn" data-goview="single">Edit in Single income →</button></div>` : ''}
+  </div>`;
+}
+
+function shareBoxHtml(){
+  const nameRow = `<label class="share-name">Your name (what ${linkState==='linked' ? escapeHtml(partnerName()) : 'your partner'} sees): <input type="text" id="myNameIn" maxlength="24" value="${escapeHtml((data.profile && data.profile.name) || '')}" placeholder="${escapeHtml(myName())}"></label>`;
+  if(linkState==='nosetup') return `<div class="share-box"><h3>One-time setup</h3><p>Sharing needs a new table in Supabase. Run <code>vault-share.sql</code> (SQL Editor → New query → paste → Run), then reload this page.</p></div>`;
+  if(linkState==='linked'){
+    return `<div class="share-box"><div class="share-line"><span>🔗 Linked with <b>${escapeHtml(partnerName())}</b>${partner && !partner.data ? ' (they haven’t opened the Vault yet)' : ''}</span>
+      <button type="button" class="linkbtn" id="shareRefresh">⟳ refresh</button><button type="button" class="linkbtn ghost" id="shareUnlink">unlink</button>${nameRow}</div>
+      ${linkError ? `<div class="share-err">Couldn’t refresh: ${escapeHtml(linkError)}</div>` : ''}</div>`;
+  }
+  if(linkState==='unknown') return `<div class="share-box"><p>Checking for a linked partner…</p></div>`;
+  const codeHtml = shareCode && shareCode.expires > Date.now()
+    ? `<div class="share-code">${shareCode.code.slice(0,3)}-${shareCode.code.slice(3)}</div><p>Text or tell them this code. It works once, until ${new Date(shareCode.expires).toLocaleString(undefined,{weekday:'short', hour:'numeric', minute:'2-digit'})}. This page links up as soon as they use it (⟳ to check now).</p><button type="button" class="linkbtn" id="shareCheck">⟳ check now</button>`
+    : `<button type="button" class="btn" id="shareMake">Make a code</button>`;
+  return `<div class="share-box"><h3>Share with a partner</h3>
+    <p>Link two Vaults to see both incomes side by side, with a combined section underneath. Each of you still edits only your own Vault. The other person needs their own That One Drawer login.</p>
+    <div class="share-grid">
+      <div class="share-card"><b class="t">I'm inviting someone</b>${codeHtml}</div>
+      <div class="share-card"><b class="t">I have a code</b><div class="share-in"><input type="text" id="shareCodeIn" maxlength="8" placeholder="K7P-4QX" autocomplete="off"><button type="button" class="btn" id="shareRedeem">Link</button></div></div>
+    </div>
+    <div class="share-err" id="shareErr">${linkState==='error' ? 'Couldn’t check for a partner: ' + escapeHtml(linkError) : ''}</div>
+    <div style="margin-top:8px">${nameRow}</div></div>`;
+}
+
+function renderDual(){
+  if(!data || viewMode!=='dual' || !document.getElementById('dualCols')) return;
+  const nameFocused = document.activeElement && document.activeElement.id==='myNameIn';
+  if(!nameFocused) document.getElementById('dualShare').innerHTML = shareBoxHtml();
+  const me = personSummary(data);
+  const hasP = linkState==='linked' && partner && partner.data;
+  const pS = hasP ? personSummary(partner.data) : null;
+  const MEC = 'var(--sky)', PC = 'var(--pink)';
+  document.getElementById('dualSwitch').innerHTML = hasP
+    ? `<button type="button" class="vtab${dualSide==='me'?' on':''}" data-side="me">${escapeHtml(myName())}</button><button type="button" class="vtab${dualSide==='partner'?' on':''}" data-side="partner">${escapeHtml(partnerName())}</button>` : '';
+  document.getElementById('dualCols').innerHTML = personHtml(me, hasP ? 'me' : dualSide, myName(), MEC, true)
+    + (hasP ? personHtml(pS, 'partner', partnerName(), PC, false)
+            : `<div class="person${dualSide==='partner'?'':' hide-sm'}" style="--pc:var(--line)"><div class="person-head"><h2>Second income</h2></div><div class="cb-note">${linkState==='linked' ? `${escapeHtml(partnerName())} is linked but hasn’t opened the Vault yet. Their side fills in once they do.` : 'Link a partner above and their side shows up here.'}</div></div>`);
+  document.getElementById('combinedBody').innerHTML = hasP ? combinedHtml(me, pS, MEC, PC)
+    : '<div class="cb-note">Once both Vaults are linked, this shows your money together: totals, both timelines on one list, and a combined debt plan and goals when you both have them.</div>';
+}
+
+function combinedHtml(A, B, AC, BC){
+  const an = escapeHtml(myName()), bn = escapeHtml(partnerName());
+  const mirrorsUnpaid = S => round2(S.d.pay.filter(r=>r.type==='bill' && r.mirror && !r.paid).reduce((s,r)=>s+r.amount,0));
+  const both = A.c.has && B.c.has;
+  const ck = round2((A.c.has?A.c.balance:0) + (B.c.has?B.c.balance:0));
+  const sav = round2(A.sav + B.sav);
+  // a split bill is counted once: the payer has it at full price, the "Send…" transfer cancels out
+  const toPay = round2(A.unpaidAll + B.unpaidAll - mirrorsUnpaid(A) - mirrorsUnpaid(B));
+  const coming = round2(A.ce.paysTotal + B.ce.paysTotal);
+  const walk = both ? round2(A.ce.endOfCycle + B.ce.endOfCycle) : null;
+  const owed = round2(A.owed + B.owed);
+  const tiles = `<div class="cb-tiles">
+    <div class="cb-tile big"><div class="l">Available right now</div><div class="a">${money(round2(ck+sav))}</div><div class="s">checking + savings, both of you</div></div>
+    <div class="cb-tile"><div class="l">In checking</div><div class="a">${money(ck)}</div><div class="s">${an} ${A.c.has?money(A.c.balance):'—'} · ${bn} ${B.c.has?money(B.c.balance):'—'}</div></div>
+    <div class="cb-tile"><div class="l">In savings</div><div class="a">${money(sav)}</div><div class="s">${an} ${money(A.sav)} · ${bn} ${money(B.sav)}</div></div>
+    <div class="cb-tile"><div class="l">Paychecks still coming</div><div class="a">${money(coming)}</div></div>
+    <div class="cb-tile"><div class="l">Still to pay</div><div class="a">${money(toPay)}</div><div class="s">split bills counted once</div></div>
+    <div class="cb-tile"><div class="l">Walking-around money</div><div class="a ${walk!==null && walk<0?'bad':''}">${walk!==null ? money(walk) : '—'}</div><div class="s">${walk!==null ? `${an} ${money(A.ce.endOfCycle)} · ${bn} ${money(B.ce.endOfCycle)}` : 'needs both checking balances'}</div></div>
+    <div class="cb-tile"><div class="l">Owed on credit</div><div class="a">${money(owed)}</div></div>
+  </div>`;
+
+  // one timeline: paychecks still coming and bills still to pay, both people, in date order
+  const items = [];
+  const add = (S, who, color) => {
+    S.incs.filter(i=>!i.paid).forEach(i=>items.push({date:i.date, who, color, name:i.name, amt:i.amount, inc:true}));
+    S.d.pay.filter(r=>r.type==='bill' && !r.paid && !r.mirror).forEach(r=>items.push({date:r.dueDate, who, color, name:r.name + (r.split ? ` (split, ${money(shareOf(r))} back)` : ''), amt:r.amount, inc:false}));
+  };
+  add(A, an, AC); add(B, bn, BC);
+  items.sort((x,y)=>(x.date||'').localeCompare(y.date||'') || (y.inc?1:0)-(x.inc?1:0));
+  let run = both ? ck - (A.c.cushion||0) - (B.c.cushion||0) : null;
+  const rows = items.map(it=>{
+    if(run!==null) run = round2(run + (it.inc ? it.amt : -it.amt));
+    return `<tr class="${it.inc?'in':''}"><td class="d">${shortDate(it.date)}</td><td class="w"><span class="pdot" style="--pc:${it.color}">${it.who}</span></td><td>${escapeHtml(it.name)}</td><td class="m">${it.inc?'+':'−'}${money(it.amt)}</td>${run!==null ? `<td class="r" title="combined checking after this">${money(run)}</td>` : ''}</tr>`;
+  }).join('');
+  const timeline = `<div class="cb-h">Coming up, both of you</div>
+    <div class="cb-note" style="margin-bottom:6px">Paychecks still coming and bills still to pay, in date order${both ? '. The last column is combined checking after each one (cushions taken out first).' : '.'}</div>
+    ${items.length ? `<table class="cb-time"><tbody>${rows}</tbody></table>` : '<div class="cb-note">Nothing left to pay or come in.</div>'}`;
+
+  // combined debt plan, only when both people have a debt
+  let debt;
+  if(A.credits.length && B.credits.length && A.p && B.p){
+    const pool = [...A.p.credits.map(c=>Object.assign({}, c, {name: `${myName()} · ${c.name}`, _who: an, _c: AC})),
+                  ...B.p.credits.map(c=>Object.assign({}, c, {name: `${partnerName()} · ${c.name}`, _who: bn, _c: BC}))]
+                  .sort((x,y)=>x.debtBalance - y.debtBalance);
+    const start = [A.p.next.date, B.p.next.date].sort()[0];
+    const extra = round2(A.p.toCredit + B.p.toCredit);
+    const res = simulatePayoff(pool, extra, new Date(start+'T00:00:00'));
+    const byName = {}; pool.forEach(c=>{ byName[c.name] = c; });
+    const sep = (A.debtFree && B.debtFree) ? [A.debtFree, B.debtFree].sort((x,y)=>y-x)[0] : null;
+    const last = res.length === pool.length ? res[res.length-1].date : null;
+    debt = `<div class="cb-h">Combined debt plan</div>
+      <div class="cb-note" style="margin-bottom:6px">Both of you have debts, so here they are as one snowball: smallest balance first, with both plans' extra (${money(extra)}) going to the smallest, and each paid-off payment rolling into the next. Your own plans in Single income stay as they are.</div>
+      <table class="cb-time"><tbody>${res.map(r=>{ const c = byName[r.name]; return `<tr><td class="w"><span class="pdot" style="--pc:${c._c}">${c._who}</span></td><td>${escapeHtml(r.name.slice(r.name.indexOf(' · ')+3))}</td><td class="m">${money(c.debtBalance)}</td><td class="r">paid off ${monthYear(r.date)}</td></tr>`; }).join('')}</tbody></table>
+      <div class="cb-note" style="margin-top:6px">${last ? `Debt-free together around <b>${monthYear(last)}</b>` : 'Some debts don’t get paid off within 40 years at these payments'}${sep && last ? ` (on your own plans, the last one is paid around ${monthYear(sep)})` : ''}.</div>`;
+  } else {
+    const who = A.credits.length ? an : B.credits.length ? bn : null;
+    debt = `<div class="cb-h">Combined debt plan</div><div class="cb-note">${who ? `Only ${who} has debts right now, so it stays on ${who}'s own plan. A combined plan shows up here when you both have one.` : 'Neither of you has a debt. Nice.'}</div>`;
+  }
+
+  // combined goals, only when both people have goals
+  let goals;
+  if(A.goals.length && B.goals.length){
+    const all = [...A.goals.map(g=>({g, who: an, c: AC})), ...B.goals.map(g=>({g, who: bn, c: BC}))];
+    const tSaved = round2(all.reduce((s,x)=>s+(x.g.saved||0),0)), tTarget = round2(all.reduce((s,x)=>s+(x.g.target||0),0));
+    goals = `<div class="cb-h">Goals, both of you</div>
+      ${all.map(x=>{ const pct = x.g.target ? Math.min(100, Math.round((x.g.saved||0)/x.g.target*100)) : 0; return `<div class="cb-goal"><span class="pdot" style="--pc:${x.c}">${x.who}</span><span class="nm">${escapeHtml(x.g.name||'Goal')}</span><span class="bar"><i style="width:${pct}%"></i></span><span class="am">${money(x.g.saved||0)} / ${money(x.g.target||0)}</span></div>`; }).join('')}
+      <div class="cb-note" style="margin-top:6px">Together: <b>${money(tSaved)}</b> saved of <b>${money(tTarget)}</b>${tTarget ? ` (${Math.round(tSaved/tTarget*100)}%)` : ''}.</div>`;
+  } else {
+    const who = A.goals.length ? an : B.goals.length ? bn : null;
+    goals = `<div class="cb-h">Goals, both of you</div><div class="cb-note">${who ? `Only ${who} has savings goals right now. They show here together when you both have one.` : 'No savings goals yet.'}</div>`;
+  }
+  return tiles + timeline + debt + goals;
+}
+
+// clicks and typing in the Dual tab
+document.getElementById('dualView').addEventListener('click', e=>{
+  const t = e.target.closest('button');
+  if(!t) return;
+  if(t.dataset.goview){ setView(t.dataset.goview); window.scrollTo({top:0}); return; }
+  if(t.dataset.side){ dualSide = t.dataset.side; renderDual(); return; }
+  if(t.id==='shareMake') createShareCode();
+  else if(t.id==='shareRedeem') redeemShareCode();
+  else if(t.id==='shareCheck' || t.id==='shareRefresh') loadPartner();
+  else if(t.id==='shareUnlink') unlinkPartner();
+});
+document.getElementById('dualView').addEventListener('input', e=>{
+  if(e.target.id==='myNameIn'){
+    data.profile = data.profile || {};
+    data.profile.name = e.target.value.trim();
+    queueSave();
+  }
+});
+document.getElementById('dualView').addEventListener('keydown', e=>{
+  if(e.target.id==='shareCodeIn' && e.key==='Enter') redeemShareCode();
+});
+document.getElementById('dualView').addEventListener('focusout', e=>{ if(e.target.id==='myNameIn') renderDual(); });
+setView(viewMode);
 
 </script>
 <script src="/nav.js" defer></script>
