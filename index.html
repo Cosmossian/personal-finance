@@ -232,6 +232,28 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 #payoffBody td:nth-child(2),#payoffBody td:nth-child(3){text-align:right;font-family:var(--mono);}
 #planningPanel th:nth-child(2),#planningPanel th:nth-child(3){text-align:right;}
 #planningPanel table{min-width:0;}
+.whatif{margin-top:22px;background:var(--surface-2);border:2px solid var(--line);border-left:6px solid var(--gold);border-radius:16px;padding:16px 18px;}
+.whatif h3{margin:0 0 4px;font-family:var(--display);font-size:17px;font-weight:800;}
+.whatif .wi-sub{font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;}
+.wi-extra{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:12px;cursor:pointer;line-height:1.45;}
+.wi-extra input{margin-top:2px;accent-color:var(--gold);}
+.wi-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:12px 0;border-top:1px solid var(--line-soft);}
+.wi-name{flex:1 1 170px;font-size:14px;font-weight:700;}
+.wi-name .d{display:block;font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted);}
+.wi-try{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.wi-try input{width:110px;font-family:var(--mono);font-size:14px;text-align:right;padding:7px 9px;border:2px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);}
+.wi-try input:focus,.wi-try input.active{outline:none;border-color:var(--gold);}
+.wi-try .per{font-size:11px;color:var(--muted);}
+.wi-out{flex:1 1 220px;text-align:right;font-family:var(--mono);font-size:13px;line-height:1.5;}
+.wi-out .was{color:var(--muted);}
+.wi-out .now{color:var(--ink);font-weight:600;}
+.wi-out .gain{display:block;font-family:var(--body);font-size:12px;font-weight:700;color:var(--vault);}
+.wi-out .gain.slow{color:var(--red);}
+.wi-out .gain.same{color:var(--muted);font-weight:600;}
+.wi-total{margin-top:6px;padding-top:12px;border-top:2px solid var(--line);font-size:14px;line-height:1.6;}
+.wi-total b{color:var(--gold);}
+.wi-total .big{font-family:var(--display);font-size:20px;font-weight:800;color:var(--vault);}
+@media (max-width:640px){.wi-out{text-align:left;}}
 
 .foot-note{text-align:center;color:var(--muted);font-size:13px;margin-top:30px;}
 .saved-flash{position:fixed;bottom:18px;right:18px;z-index:300;background:var(--vault);color:var(--on-color);font-size:12px;font-weight:800;padding:7px 14px;border:2px solid #000;border-radius:999px;box-shadow:3px 3px 0 var(--shadow);opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s;pointer-events:none;}
@@ -721,6 +743,13 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
           </thead>
           <tbody id="payoffBody"></tbody>
         </table>
+      </div>
+      <div class="whatif" id="whatIf">
+        <h3>What if I paid more?</h3>
+        <div class="wi-sub">Try a bigger monthly payment on any debt and see the new payoff dates. Just for planning: nothing here changes your bills or gets saved.</div>
+        <label class="wi-extra"><input type="checkbox" id="wiExtra" checked> <span id="wiExtraText">Also count the extra from the plan above every month (like the table)</span></label>
+        <div id="wiRows"></div>
+        <div class="wi-total" id="wiTotal"></div>
       </div>
       <div class="planning-note">Order follows the "snowball" method — smallest balance first — since it needs no interest-rate info and frees up monthly cash the fastest. As each debt clears, its payment rolls into the next one.</div>
     </div>
@@ -1603,7 +1632,7 @@ function getCreditRows(){
   rows.forEach(r=>{
     const key = r.groupId || r.id;
     if(!grouped[key]){
-      grouped[key] = {name: r.name, debtBalance: r.debtBalance||0, amount: 0};
+      grouped[key] = {key, name: r.name, debtBalance: r.debtBalance||0, amount: 0};
     }
     grouped[key].amount += r.amount;
     grouped[key].debtBalance = Math.max(grouped[key].debtBalance, r.debtBalance||0);
@@ -1771,7 +1800,127 @@ function renderPlanning(){
     </tr>
   `).join('');
   applyMobileLabels('payoffBody');
+  const wiFocus = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.wikey;
+  renderWhatIf(planning, !!wiFocus);
 }
+
+// ---- What if I paid more? (planning only, never saved) ----
+const wr2 = n => Math.round(n*100)/100;
+const whatIf = {};          // debt key → monthly payment to try
+let whatIfExtra = true;     // include the plan's extra (toCredit) every month, like the table
+function monthYear(d){ return d.toLocaleDateString(undefined,{month:'short',year:'numeric'}); }
+function monthsWord(n){ return n + (n===1 ? ' month' : ' months'); }
+function whatIfResults(planning, payments){
+  const credits = planning.credits.map(c=>Object.assign({}, c, {amount: payments[c.key] !== undefined ? payments[c.key] : c.amount}));
+  const extra = whatIfExtra ? planning.toCredit : 0;
+  const res = simulatePayoff(credits, extra, new Date(planning.next.date+'T00:00:00'));
+  const by = {}; res.forEach(r=>{ by[r.name] = r; });
+  return credits.map(c=>({c, r: by[c.name] || null}));
+}
+function renderWhatIf(planning, keepInputs){
+  const rowsEl = document.getElementById('wiRows');
+  if(!rowsEl) return;
+  const credits = planning.credits;
+  Object.keys(whatIf).forEach(k=>{ if(!credits.some(c=>c.key===k)) delete whatIf[k]; });
+  document.getElementById('wiExtra').checked = whatIfExtra;
+  document.getElementById('wiExtraText').innerHTML = planning.toCredit > 0
+    ? `Also put the plan's extra <b>${money(planning.toCredit)}</b> toward debt every month (like the table above). Untick to see just the monthly payments.`
+    : `Also put the plan's extra toward debt every month (it's $0 right now).`;
+  const base = whatIfResults(planning, {});
+  const tried = whatIfResults(planning, whatIf);
+  const rowsHtml = credits.map((c,i)=>{
+    const b = base[i].r, t = tried[i].r;
+    const changed = whatIf[c.key] !== undefined && whatIf[c.key] !== c.amount;
+    const val = whatIf[c.key] !== undefined ? whatIf[c.key] : '';
+    let out;
+    if(!t){
+      out = `<span class="now">not paid off in 40 years</span><span class="gain slow">the payment needs to be more than $0</span>`;
+    } else if(!changed && b && b.months !== t.months){
+      const d = b.months - t.months;
+      out = `<span class="was">${monthYear(b.date)}</span> → <span class="now">${monthYear(t.date)}</span>
+        <span class="gain ${d<0?'slow':''}">${monthsWord(Math.abs(d))} ${d>0?'sooner':'later'} · freed-up money rolls in</span>`;
+    } else if(!changed){
+      out = `<span class="now">${monthYear(t.date)}</span><span class="gain same">${monthsWord(t.months)} from now</span>`;
+    } else {
+      const diff = b ? b.months - t.months : null;
+      const more = wr2(whatIf[c.key] - c.amount);
+      const gain = diff === null ? `paid off in ${monthsWord(t.months)}`
+        : diff > 0 ? `${monthsWord(diff)} sooner`
+        : diff < 0 ? `${monthsWord(-diff)} later`
+        : `same month`;
+      out = `<span class="was">${b ? monthYear(b.date) : 'never'}</span> → <span class="now">${monthYear(t.date)}</span>
+        <span class="gain ${diff<0?'slow':diff===0?'same':''}">${gain} · ${more>=0?'+':'−'}${money(Math.abs(more))}/month</span>`;
+    }
+    return `<div class="wi-row">
+      <div class="wi-name">${escapeHtml(c.name)}<span class="d">${money(c.debtBalance)} left · pays ${money(c.amount)}/mo</span></div>
+      <div class="wi-try">
+        <input type="number" step="0.01" min="0" inputmode="decimal" data-wikey="${escapeHtml(c.key)}" placeholder="${c.amount.toFixed(2)}" value="${val===''?'':val}" class="${changed?'active':''}" aria-label="Try paying per month for ${escapeHtml(c.name)}">
+        <span class="per">/mo</span>
+        <button type="button" class="linkbtn" data-wiset="${escapeHtml(c.key)}" data-amt="${wr2(c.amount*2)}">×2</button>
+        <button type="button" class="linkbtn" data-wiset="${escapeHtml(c.key)}" data-amt="${wr2(c.amount+50)}">+$50</button>
+        ${changed ? `<button type="button" class="linkbtn ghost" data-wiset="${escapeHtml(c.key)}" data-amt="">reset</button>` : ''}
+      </div>
+      <div class="wi-out">${out}</div>
+    </div>`;
+  });
+  // while typing, keep the boxes as they are (rebuilding them would move the cursor) and only refresh the rest
+  const rowEls = rowsEl.querySelectorAll('.wi-row');
+  const sameRows = rowEls.length === credits.length && credits.every((c,i)=>{
+    const inp = rowEls[i].querySelector('input'); return inp && inp.dataset.wikey === c.key; });
+  if(keepInputs && sameRows){
+    rowsHtml.forEach((h,i)=>{
+      const tmp = document.createElement('div'); tmp.innerHTML = h;
+      rowEls[i].querySelector('.wi-name').innerHTML = tmp.querySelector('.wi-name').innerHTML;
+      rowEls[i].querySelector('.wi-out').innerHTML = tmp.querySelector('.wi-out').innerHTML;
+      rowEls[i].querySelector('input').className = tmp.querySelector('input').className;
+      rowEls[i].querySelectorAll('.wi-try button').forEach(b=>b.remove());
+      tmp.querySelectorAll('.wi-try button').forEach(b=>rowEls[i].querySelector('.wi-try').appendChild(b));
+    });
+  } else {
+    rowsEl.innerHTML = rowsHtml.join('');
+  }
+  // totals: debt-free date + extra per month
+  const last = arr => arr.reduce((m,x)=> x.r ? (m && m.months >= x.r.months ? m : x.r) : m, null);
+  const neverB = base.some(x=>!x.r), neverT = tried.some(x=>!x.r);
+  const lb = last(base), lt = last(tried);
+  const extraMo = wr2(credits.reduce((s,c)=>s + (whatIf[c.key] !== undefined ? whatIf[c.key] - c.amount : 0), 0));
+  const anyChange = credits.some(c=>whatIf[c.key] !== undefined && whatIf[c.key] !== c.amount);
+  const totalEl = document.getElementById('wiTotal');
+  if(neverT){
+    totalEl.innerHTML = `Debt-free: <b>not within 40 years</b> with these payments.`;
+  } else if(!anyChange){
+    totalEl.innerHTML = `Debt-free around <span class="big">${monthYear(lt.date)}</span> with the payments you have now. Type a bigger payment above (or tap ×2) to compare.`;
+  } else {
+    const diff = (!neverB && lb) ? lb.months - lt.months : null;
+    totalEl.innerHTML = `Debt-free around <span class="big">${monthYear(lt.date)}</span>${diff === null ? '' : diff > 0 ? `, <b>${monthsWord(diff)} sooner</b> than ${monthYear(lb.date)}` : diff < 0 ? `, <b>${monthsWord(-diff)} later</b> than ${monthYear(lb.date)}` : ` (same as now)`}.
+      <br>That's <b>${extraMo>=0?'+':'−'}${money(Math.abs(extraMo))} a month</b> ${extraMo>=0?'more':'less'} than you pay now, until each debt you changed is paid off.
+      <br><button type="button" class="linkbtn ghost" id="wiResetAll" style="margin-top:6px">reset all</button>`;
+  }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const box = document.getElementById('whatIf');
+  if(!box) return;
+  box.addEventListener('input', e=>{
+    const k = e.target.dataset && e.target.dataset.wikey;
+    if(!k) return;
+    const v = parseFloat(e.target.value);
+    if(isNaN(v) || v < 0) delete whatIf[k]; else whatIf[k] = wr2(v);
+    const pl = computePlanning();
+    if(pl && pl.credits.length) renderWhatIf(pl, true);
+  });
+  box.addEventListener('change', e=>{
+    if(e.target.id === 'wiExtra'){ whatIfExtra = e.target.checked; renderPlanning(); }
+  });
+  box.addEventListener('click', e=>{
+    const b = e.target.closest('button');
+    if(!b) return;
+    if(b.id === 'wiResetAll'){ Object.keys(whatIf).forEach(k=>delete whatIf[k]); renderPlanning(); return; }
+    const k = b.dataset.wiset;
+    if(k === undefined) return;
+    if(b.dataset.amt === '') delete whatIf[k]; else whatIf[k] = parseFloat(b.dataset.amt);
+    renderPlanning();
+  });
+});
 
 function balanceEvenly(){
   const incomes = incomeRows();
