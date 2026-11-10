@@ -329,6 +329,14 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .tag-paid{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#0B140E;background:var(--vault);border-radius:999px;padding:1px 7px;}
 .tag-held{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#0B140E;border-radius:999px;padding:1px 7px;white-space:nowrap;}
 .tag-held.checking{background:var(--teal);} .tag-held.savings{background:var(--plum);}
+.tag-held.payoff{background:var(--gold);}
+.payoff-tag{color:var(--vault) !important;font-weight:700;}
+.po-tag{display:inline-block;margin-left:8px;font-size:10.5px;font-weight:800;color:#0B140E;background:var(--vault);border-radius:999px;padding:1px 8px;vertical-align:middle;}
+#payoffBody .linkbtn{margin-left:8px;vertical-align:middle;}
+.paidoff-list{margin-top:10px;font-size:13px;color:var(--muted);}
+.paidoff-list b{color:var(--vault);}
+.reco-btn{margin-top:8px;font-family:var(--body);font-size:13px;font-weight:800;color:#0B140E;background:var(--gold);border:2px solid #000;border-radius:999px;padding:5px 14px;cursor:pointer;box-shadow:2px 2px 0 var(--shadow);}
+.reco-paying{display:block;margin-top:8px;padding:8px 12px;border:2px solid var(--vault);border-radius:12px;background:rgba(61,186,112,.08);}
 .ck-held{margin-top:10px;padding:9px 12px;background:var(--surface-2);border:1.5px dashed var(--line);border-radius:12px;font-size:13px;color:var(--muted);line-height:1.6;}
 .ck-held b{font-family:var(--mono);font-weight:600;color:var(--ink);}
 .ck-held .k{color:var(--teal);font-weight:700;} .ck-held .s{color:var(--plum);font-weight:700;}
@@ -744,6 +752,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
           <tbody id="payoffBody"></tbody>
         </table>
       </div>
+      <div class="paidoff-list" id="paidOffList"></div>
       <div class="whatif" id="whatIf">
         <h3>What if I paid more?</h3>
         <div class="wi-sub">Try a bigger monthly payment on any debt and see the new payoff dates. Just for planning: nothing here changes your bills or gets saved.</div>
@@ -1234,6 +1243,9 @@ function renderPay(){
       if(isMonthlyBillsRow){
         tag += `<span class="split-tag">synced with Monthly Expenditures total</span>`;
       }
+      if(row.payoff){
+        tag += `<span class="split-tag payoff-tag">payoff this cycle · covers the ${money(row.payoff.min||0)} minimum</span>`;
+      }
       let paylinkArea;
       if(editingLinkIds.has(row.id)){
         paylinkArea = `<div class="paylink-row"><input type="url" class="paylink-input" placeholder="payment link (optional)" value="${escapeHtml(row.payUrl||'')}" data-f="payUrl" data-editing="1"></div>`;
@@ -1308,6 +1320,11 @@ function renderPay(){
               const sibInput = body.querySelector(`tr[data-rowid="${sib.id}"] input[data-f="debtBalance"]`);
               if(sibInput) sibInput.value = row.debtBalance.toFixed(2);
             });
+          }
+          const pk = row.groupId || row.id;
+          if(payoffRows(pk).some(r=>r.payoff)){
+            syncPayoff(pk);
+            payoffRows(pk).forEach(r=>{ const ai = body.querySelector(`tr[data-rowid="${r.id}"] input[data-f="amount"]`); if(ai && document.activeElement!==ai) ai.value = r.amount.toFixed(2); });
           }
         }
         else row[field] = el.value;
@@ -1634,12 +1651,55 @@ function getCreditRows(){
   rows.forEach(r=>{
     const key = r.groupId || r.id;
     if(!grouped[key]){
-      grouped[key] = {key, name: r.name, debtBalance: r.debtBalance||0, amount: 0};
+      grouped[key] = {key, name: r.name, debtBalance: r.debtBalance||0, amount: 0, min: 0, unpaidNow: 0, payingOff: false, payRow: null, rows: []};
     }
-    grouped[key].amount += r.amount;
-    grouped[key].debtBalance = Math.max(grouped[key].debtBalance, r.debtBalance||0);
+    const g = grouped[key];
+    g.rows.push(r);
+    g.amount += r.amount;                                  // what's paid this cycle (the payoff amount when paying off)
+    g.min += r.payoff ? (r.payoff.min||0) : r.amount;      // the normal monthly payment
+    if(!r.paid) g.unpaidNow += r.amount;                   // already counted in "bills still to pay"
+    if(r.payoff){ g.payingOff = true; g.payRow = r; }
+    g.debtBalance = Math.max(g.debtBalance, r.debtBalance||0);
   });
   return Object.values(grouped);
+}
+
+// ---- Paying a debt off this cycle ----
+// The debt's (last) bill this cycle becomes the payoff: its amount = balance − the debt's other parts this cycle,
+// and the normal minimum is kept in row.payoff.min so it can be put back. The payoff covers the minimum.
+function payoffRows(key){
+  return data.pay.filter(r=>r.type==='bill' && r.isCredit && (r.groupId||r.id)===key)
+    .sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+}
+function syncPayoff(key){
+  const rows = payoffRows(key);
+  const t = rows.find(r=>r.payoff);
+  if(!t) return;
+  const bal = Math.max(...rows.map(r=>r.debtBalance||0));
+  const others = rows.filter(r=>r!==t).reduce((s,r)=>s+(r.amount||0),0);
+  t.amount = Math.max(0, Math.round((bal - others)*100)/100);
+}
+function startPayoff(key){
+  const rows = payoffRows(key);
+  if(!rows.length || rows.some(r=>r.payoff)) return;
+  pushUndoSnapshot();
+  const t = rows[rows.length-1];
+  t.payoff = {min: t.amount||0};
+  syncPayoff(key);
+  render(); queueSave();
+}
+function cancelPayoff(key){
+  const t = payoffRows(key).find(r=>r.payoff);
+  if(!t) return;
+  pushUndoSnapshot();
+  t.amount = t.payoff.min||0;
+  delete t.payoff;
+  render(); queueSave();
+}
+function payoffWhen(c){
+  const r = c.payRow || c.rows[c.rows.length-1];
+  const pc = r && r.paycheckId ? incomeRows().find(i=>i.id===r.paycheckId) : null;
+  return pc ? {label: pc.name, date: pc.date} : {label: 'due', date: r ? r.dueDate : null};
 }
 
 // What's left once every paycheck still coming is in and every unpaid bill is paid:
@@ -1672,12 +1732,16 @@ function computePlanning(){
   const hasOverride = typeof data.debitLeftover === 'number' && !isNaN(data.debitLeftover);
   const leftover = hasOverride ? Math.round(data.debitLeftover * 100) / 100 : calcLeftover;
   const credits = getCreditRows().slice().sort((a,b)=>(a.debtBalance)-(b.debtBalance));
+  // debts being paid off this cycle are already in the bills; the extra goes to the next one
+  const open = credits.filter(c=>!c.payingOff);
   let toCredit = 0, toSavings = 0;
   if(leftover > 0){
-    if(credits.length > 0){
-      const priority = credits[0];
-      if(priority.debtBalance <= leftover){
-        toCredit = priority.debtBalance;
+    if(open.length > 0){
+      const priority = open[0];
+      // this cycle's unpaid minimum is already counted in the bills, so clearing it only takes the rest
+      const toClear = Math.max(0, Math.round((priority.debtBalance - priority.unpaidNow)*100)/100);
+      if(toClear <= leftover){
+        toCredit = toClear;
       } else {
         toCredit = Math.round(leftover * 0.5 * 100) / 100;
       }
@@ -1686,31 +1750,33 @@ function computePlanning(){
       toSavings = leftover;
     }
   }
-  return {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits, fromChecking, ce};
+  return {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits, open, fromChecking, ce};
 }
 
 function simulatePayoff(credits, extraMonthly, startDate){
-  const sim = credits.map(c=>({name:c.name, balance:c.debtBalance, payment:c.amount}));
+  // Month 1 is this cycle (the next paycheck's month), so a debt cleared by this cycle's payments shows this month.
+  const sim = credits.map(c=>({name:c.name, balance:c.debtBalance, payment:c.amount, min:(c.min!==undefined?c.min:c.amount), off:!!c.payingOff}));
   let freed = 0;
   let month = 0;
   const results = [];
   while(sim.length > 0 && month < 480){
     month++;
+    let target = sim.findIndex(d=>!d.off); if(target < 0) target = 0;
     sim.forEach((d,i)=>{
-      const pay = d.payment + (i===0 ? extraMonthly + freed : 0);
+      const pay = d.payment + (i===target ? extraMonthly + freed : 0);
       d.balance = Math.round((d.balance - pay) * 100) / 100;
     });
     for(let i=sim.length-1; i>=0; i--){
       if(sim[i].balance <= 0){
         const paidOff = sim.splice(i,1)[0];
-        freed += paidOff.payment;
+        freed += paidOff.min;
         const payoffDate = new Date(startDate);
-        payoffDate.setMonth(payoffDate.getMonth() + month);
-        results.push({name:paidOff.name, months:month, date:payoffDate, freedUp:paidOff.payment});
+        payoffDate.setMonth(payoffDate.getMonth() + month - 1);
+        results.push({name:paidOff.name, months:month, date:payoffDate, freedUp:paidOff.min, off:paidOff.off});
       }
     }
   }
-  results.sort((a,b)=>a.months-b.months);
+  results.sort((a,b)=>a.months-b.months || (b.off?1:0)-(a.off?1:0));
   return results;
 }
 
@@ -1746,7 +1812,7 @@ function renderPlanning(){
   intro.style.display = 'none';
   body.style.display = '';
 
-  const {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits, fromChecking, ce} = planning;
+  const {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits, open, fromChecking, ce} = planning;
 
   // keep the debit field in sync (but never overwrite it while you're typing in it)
   const debitInput = document.getElementById('debitInput');
@@ -1773,10 +1839,20 @@ function renderPlanning(){
     <div class="pie-legend-row"><span class="pie-swatch" style="background:var(--brick)"></span>Credit<b>${money(toCredit)}</b></div>
   `;
 
-  const priority = credits[0];
-  const payoffNote = priority.debtBalance <= leftover
-    ? `That's enough to pay off <b>${escapeHtml(priority.name)}</b> completely this cycle.`
-    : `Priority target: <b>${escapeHtml(priority.name)}</b> (smallest balance, $${priority.debtBalance.toFixed(2)} left).`;
+  const priority = open[0] || null;
+  const paying = credits.filter(c=>c.payingOff);
+  const payingNote = paying.map(c=>{
+    const w = payoffWhen(c);
+    return `<span class="reco-paying">✓ Paying off <b>${escapeHtml(c.name)}</b>: ${money(c.debtBalance)} ${w.date ? `with ${w.label==='due' ? 'the bill due' : `<b>${escapeHtml(w.label)}</b> on`} ${shortDate(w.date)}` : 'this cycle'}. That covers its ${money(c.min)} minimum, so there's no separate minimum to pay. <button type="button" class="linkbtn" data-payoff-cancel="${escapeHtml(c.key)}">not paying it off</button></span>`;
+  }).join('');
+  let payoffNote = '';
+  if(priority){
+    const toClear = Math.max(0, Math.round((priority.debtBalance - priority.unpaidNow)*100)/100);
+    payoffNote = toClear <= leftover
+      ? `That's enough to pay off <b>${escapeHtml(priority.name)}</b> completely this cycle (${money(priority.debtBalance)}, which includes this month's ${money(priority.unpaidNow || priority.min)} payment).
+         <br><button type="button" class="reco-btn" data-payoff-start="${escapeHtml(priority.key)}">✓ Pay it off this cycle</button>`
+      : `Priority target: <b>${escapeHtml(priority.name)}</b> (smallest balance, ${money(priority.debtBalance)} left).`;
+  }
 
   document.getElementById('planningReco').innerHTML = `
     ${hasOverride
@@ -1786,22 +1862,31 @@ function renderPlanning(){
     <span class="reco-amt">${money(leftover)} walking-around money</span>`
         : `This cycle: ${money(income)} in total income against ${money(billsTotal)} in bills leaves you
     <span class="reco-amt">${money(leftover)} walking-around money</span>`}
+    ${payingNote}
     ${payoffNote}
     <br><br>
-    Recommended split: <b>${money(toSavings)} → Savings</b>, <b>${money(toCredit)} → ${escapeHtml(priority.name)}</b>.
+    Recommended split: <b>${money(toSavings)} → Savings</b>${priority ? `, <b>${money(toCredit)} → ${escapeHtml(priority.name)}</b>` : ''}.
     <br><br>
     <span style="opacity:0.85;font-size:12px;">Good time to actually move it: your next payday, <b>${escapeHtml(next.name)}</b> on ${shortDate(next.date)}.</span>
   `;
 
   const results = simulatePayoff(credits, toCredit, new Date(next.date+'T00:00:00'));
-  document.getElementById('payoffBody').innerHTML = results.map(r=>`
-    <tr>
-      <td>${escapeHtml(r.name)}</td>
+  const byName = {}; credits.forEach(c=>{ byName[c.name] = c; });
+  document.getElementById('payoffBody').innerHTML = results.map(r=>{
+    const c = byName[r.name];
+    const btn = !c ? '' : c.payingOff
+      ? `<span class="po-tag">✓ paying off this cycle</span>`
+      : `<button type="button" class="linkbtn ghost" data-payoff-start="${escapeHtml(c.key)}" title="pay the whole balance this cycle in place of the minimum">pay off this cycle</button>`;
+    return `<tr>
+      <td>${escapeHtml(r.name)}${btn}</td>
       <td>${r.date.toLocaleDateString(undefined,{month:'short',year:'numeric'})}</td>
       <td>${money(r.freedUp)}</td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
   applyMobileLabels('payoffBody');
+  const po = (data.paidOff||[]).slice(-8).reverse();
+  document.getElementById('paidOffList').innerHTML = po.length
+    ? `Paid off: ${po.map(p=>`<b>✓ ${escapeHtml(p.name)}</b> (${escapeHtml(p.month)})`).join(' · ')}` : '';
   const wiFocus = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.wikey;
   renderWhatIf(planning, !!wiFocus);
 }
@@ -1813,7 +1898,10 @@ let whatIfExtra = true;     // include the plan's extra (toCredit) every month, 
 function monthYear(d){ return d.toLocaleDateString(undefined,{month:'short',year:'numeric'}); }
 function monthsWord(n){ return n + (n===1 ? ' month' : ' months'); }
 function whatIfResults(planning, payments){
-  const credits = planning.credits.map(c=>Object.assign({}, c, {amount: payments[c.key] !== undefined ? payments[c.key] : c.amount}));
+  const credits = planning.credits.map(c=>{
+    if(c.payingOff || payments[c.key] === undefined) return c;
+    return Object.assign({}, c, {amount: payments[c.key], min: payments[c.key]});
+  });
   const extra = whatIfExtra ? planning.toCredit : 0;
   const res = simulatePayoff(credits, extra, new Date(planning.next.date+'T00:00:00'));
   const by = {}; res.forEach(r=>{ by[r.name] = r; });
@@ -1823,7 +1911,7 @@ function renderWhatIf(planning, keepInputs){
   const rowsEl = document.getElementById('wiRows');
   if(!rowsEl) return;
   const credits = planning.credits;
-  Object.keys(whatIf).forEach(k=>{ if(!credits.some(c=>c.key===k)) delete whatIf[k]; });
+  Object.keys(whatIf).forEach(k=>{ if(!credits.some(c=>c.key===k && !c.payingOff)) delete whatIf[k]; });
   document.getElementById('wiExtra').checked = whatIfExtra;
   document.getElementById('wiExtraText').innerHTML = planning.toCredit > 0
     ? `Also put the plan's extra <b>${money(planning.toCredit)}</b> toward debt every month (like the table above). Untick to see just the monthly payments.`
@@ -1832,6 +1920,12 @@ function renderWhatIf(planning, keepInputs){
   const tried = whatIfResults(planning, whatIf);
   const rowsHtml = credits.map((c,i)=>{
     const b = base[i].r, t = tried[i].r;
+    if(c.payingOff){
+      return `<div class="wi-row" data-k="${escapeHtml(c.key)}">
+        <div class="wi-name">${escapeHtml(c.name)}<span class="d">${money(c.debtBalance)} left · paying it all off this cycle</span></div>
+        <div class="wi-out"><span class="now">${t ? monthYear(t.date) : ''}</span><span class="gain">✓ paying off this cycle</span></div>
+      </div>`;
+    }
     const changed = whatIf[c.key] !== undefined && whatIf[c.key] !== c.amount;
     const val = whatIf[c.key] !== undefined ? whatIf[c.key] : '';
     let out;
@@ -1842,7 +1936,7 @@ function renderWhatIf(planning, keepInputs){
       out = `<span class="was">${monthYear(b.date)}</span> → <span class="now">${monthYear(t.date)}</span>
         <span class="gain ${d<0?'slow':''}">${monthsWord(Math.abs(d))} ${d>0?'sooner':'later'} · freed-up money rolls in</span>`;
     } else if(!changed){
-      out = `<span class="now">${monthYear(t.date)}</span><span class="gain same">${monthsWord(t.months)} from now</span>`;
+      out = `<span class="now">${monthYear(t.date)}</span><span class="gain same">${t.months<=1 ? 'this cycle' : monthsWord(t.months-1) + ' from now'}</span>`;
     } else {
       const diff = b ? b.months - t.months : null;
       const more = wr2(whatIf[c.key] - c.amount);
@@ -1853,7 +1947,7 @@ function renderWhatIf(planning, keepInputs){
       out = `<span class="was">${b ? monthYear(b.date) : 'never'}</span> → <span class="now">${monthYear(t.date)}</span>
         <span class="gain ${diff<0?'slow':diff===0?'same':''}">${gain} · ${more>=0?'+':'−'}${money(Math.abs(more))}/month</span>`;
     }
-    return `<div class="wi-row">
+    return `<div class="wi-row" data-k="${escapeHtml(c.key)}">
       <div class="wi-name">${escapeHtml(c.name)}<span class="d">${money(c.debtBalance)} left · pays ${money(c.amount)}/mo</span></div>
       <div class="wi-try">
         <input type="number" step="0.01" min="0" inputmode="decimal" data-wikey="${escapeHtml(c.key)}" placeholder="${c.amount.toFixed(2)}" value="${val===''?'':val}" class="${changed?'active':''}" aria-label="Try paying per month for ${escapeHtml(c.name)}">
@@ -1867,11 +1961,11 @@ function renderWhatIf(planning, keepInputs){
   });
   // while typing, keep the boxes as they are (rebuilding them would move the cursor) and only refresh the rest
   const rowEls = rowsEl.querySelectorAll('.wi-row');
-  const sameRows = rowEls.length === credits.length && credits.every((c,i)=>{
-    const inp = rowEls[i].querySelector('input'); return inp && inp.dataset.wikey === c.key; });
+  const sameRows = rowEls.length === credits.length && credits.every((c,i)=>rowEls[i].dataset.k === c.key && !!rowEls[i].querySelector('input') === !c.payingOff);
   if(keepInputs && sameRows){
     rowsHtml.forEach((h,i)=>{
       const tmp = document.createElement('div'); tmp.innerHTML = h;
+      if(!tmp.querySelector('input')){ rowEls[i].innerHTML = tmp.firstElementChild.innerHTML; return; }
       rowEls[i].querySelector('.wi-name').innerHTML = tmp.querySelector('.wi-name').innerHTML;
       rowEls[i].querySelector('.wi-out').innerHTML = tmp.querySelector('.wi-out').innerHTML;
       rowEls[i].querySelector('input').className = tmp.querySelector('input').className;
@@ -1899,6 +1993,12 @@ function renderWhatIf(planning, keepInputs){
       <br><button type="button" class="linkbtn ghost" id="wiResetAll" style="margin-top:6px">reset all</button>`;
   }
 }
+document.addEventListener('click', e=>{
+  const s = e.target.closest('[data-payoff-start]');
+  if(s){ startPayoff(s.dataset.payoffStart); return; }
+  const c = e.target.closest('[data-payoff-cancel]');
+  if(c){ cancelPayoff(c.dataset.payoffCancel); }
+});
 document.addEventListener('DOMContentLoaded', ()=>{
   const box = document.getElementById('whatIf');
   if(!box) return;
@@ -2050,7 +2150,17 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
     const after = Math.max(0, round2(before - g.pay));
     g.rows.forEach(r=>{ r.debtBalance = Math.max(0, round2((r.debtBalance||0) - g.pay)); });
     tookOff += before - after;
-    if(after === 0) paidOff.push(g.name);
+    if(after === 0){
+      // paid off: take its bill(s) off the schedule and remember it in Payment Planning's "Paid off" line
+      paidOff.push(g.name);
+      const last = g.rows.map(r=>{
+        const pc = r.paycheckId ? incomeRows().find(i=>i.id===r.paycheckId) : null;
+        return (pc && pc.date) || r.dueDate || todayISO();
+      }).sort().pop();
+      const m = new Date(last+'T00:00:00').toLocaleDateString(undefined,{month:'short', year:'numeric'});
+      (data.paidOff = data.paidOff || []).push({name: g.name, month: m, at: todayISO()});
+      data.pay = data.pay.filter(r=>!g.rows.includes(r));
+    }
   });
 
   data.pay.forEach(row=>{
@@ -2061,7 +2171,7 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
   render();
   queueSave();
   const n = Object.keys(debtGroups).length;
-  if(n) flashSave(`advanced a month · ${money(round2(tookOff))} off ${n} debt balance${n===1?'':'s'}${paidOff.length ? ' · paid off: ' + paidOff.join(', ') + ' 🎉' : ''}`, false, 4500);
+  if(n) flashSave(`advanced a month · ${money(round2(tookOff))} off ${n} debt balance${n===1?'':'s'}${paidOff.length ? ' · paid off: ' + paidOff.join(', ') + ' 🎉 (taken off your bills)' : ''}`, false, 4500);
 });
 
 // ================= Checking, Savings Goals, account cards =================
@@ -2206,6 +2316,7 @@ function renderChecking(){
   const itemsHtml = (bills, payDate) => bills.length
     ? bills.map(r=>`<div class="due-item${r.paid ? ' is-paid' : ''}">
         <span class="nm">${escapeHtml(r.name)}</span>
+        ${r.payoff ? `<span class="tag-held payoff" title="paying this debt off; covers the normal ${money(r.payoff.min||0)} minimum">payoff</span>` : ''}
         ${r.paid ? '<span class="tag-paid">paid</span>' : [
             (!c.heldIds.has(r.id) && (r.dueDate||'') < c.today) ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : '',
             !c.heldIds.has(r.id) ? ''
