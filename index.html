@@ -556,7 +556,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
   </div>
 
   <div class="advance-bar">
-    <span>Advancing moves every paycheck and due date forward one calendar month, on the same day of month.</span>
+    <span>Advancing moves every paycheck and due date forward one calendar month, on the same day of month, and takes this month’s payment off each credit balance.</span>
     <button class="advance" id="advanceBtn">Advance a month →</button>
   </div>
 
@@ -958,13 +958,15 @@ async function saveRow(d){
   if(error) throw error;
 }
 
-function flashSave(text, isError){
+function flashSave(text, isError, ms){
+  if(flashSave._hold && Date.now() < flashSave._hold && !ms) return;  // a longer message is showing
   const f = document.getElementById('savedFlash');
   f.textContent = text;
   f.classList.toggle('is-error', !!isError);
   f.classList.add('show');
   clearTimeout(flashSave._t);
-  flashSave._t = setTimeout(()=>f.classList.remove('show'), isError ? 2200 : 900);
+  if(ms) flashSave._hold = Date.now() + ms;
+  flashSave._t = setTimeout(()=>f.classList.remove('show'), ms || (isError ? 2200 : 900));
 }
 
 function queueSave(){
@@ -2032,6 +2034,25 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
     out: 0
   });
 
+  // this month's payment on each credit debt counts as made: take it off the balance.
+  // Split bills (same groupId) are one debt paid in parts, so the group's total comes off every row in it.
+  const debtGroups = {};
+  data.pay.forEach(row=>{
+    if(row.type==='bill' && row.isCredit && (row.debtBalance||0) > 0){
+      const k = row.groupId || row.id;
+      (debtGroups[k] = debtGroups[k] || {rows:[], pay:0, name:row.name}).rows.push(row);
+      debtGroups[k].pay += row.amount || 0;
+    }
+  });
+  let tookOff = 0; const paidOff = [];
+  Object.values(debtGroups).forEach(g=>{
+    const before = Math.max(...g.rows.map(r=>r.debtBalance||0));
+    const after = Math.max(0, round2(before - g.pay));
+    g.rows.forEach(r=>{ r.debtBalance = Math.max(0, round2((r.debtBalance||0) - g.pay)); });
+    tookOff += before - after;
+    if(after === 0) paidOff.push(g.name);
+  });
+
   data.pay.forEach(row=>{
     if(row.type==='income'){ row.date = addMonths(row.date, 1); }
     else { row.dueDate = addMonths(row.dueDate, 1); row.paid = false; }
@@ -2039,6 +2060,8 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
 
   render();
   queueSave();
+  const n = Object.keys(debtGroups).length;
+  if(n) flashSave(`advanced a month · ${money(round2(tookOff))} off ${n} debt balance${n===1?'':'s'}${paidOff.length ? ' · paid off: ' + paidOff.join(', ') + ' 🎉' : ''}`, false, 4500);
 });
 
 // ================= Checking, Savings Goals, account cards =================
