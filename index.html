@@ -337,6 +337,43 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .po-tag:hover .po-x{opacity:1;}
 #payoffBody .linkbtn{margin-left:8px;vertical-align:middle;}
 .paidoff-list{margin-top:10px;font-size:13px;color:var(--muted);}
+/* holiday pause + holds + gift fund (Nov 12, 2026) */
+.pause-box{margin-bottom:16px;font-size:13.5px;line-height:1.55;}
+.pause-box.off{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pause-box.on,.pause-box.back{background:var(--surface-2);border:2px solid var(--pink);border-radius:16px;padding:12px 16px;}
+.pause-box.back{border-color:var(--vault);}
+.pause-box .pz-title{font-family:var(--display);font-weight:800;font-size:17px;margin-bottom:4px;}
+.pause-box .pz-acts{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pause-box .pz-link{color:var(--pink);font-weight:700;}
+.pause-box select,.hold-pick select,.gift-side select{font-family:var(--body);font-size:12.5px;padding:3px 6px;border:2px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--ink);}
+.reco-paying.held{border-color:var(--pink);background:rgba(255,141,188,.08);}
+.po-tag.hold{background:var(--pink);}
+.hold-pick{display:inline-flex;align-items:center;gap:6px;margin-left:8px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
+.tag-held.hold{background:var(--pink);}
+.hold-tag{color:var(--pink) !important;font-weight:700;}
+.hold-tag .linkbtn{margin-left:4px;}
+.reco-btn.pink{background:var(--pink);}
+.amt-wrap input:disabled{opacity:.55;cursor:not-allowed;}
+.jt-gift{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;cursor:pointer;}
+.jt-gift small{color:var(--muted);font-weight:600;}
+.gift-grid{display:flex;gap:18px;flex-wrap:wrap;}
+.gift-main{flex:2 1 300px;display:flex;flex-direction:column;gap:8px;}
+.gift-side{flex:1 1 220px;display:flex;flex-direction:column;gap:10px;}
+.gift-amt{font-family:var(--display);font-size:34px;font-weight:800;color:var(--pink);line-height:1.1;}
+.gift-of{font-size:13px;color:var(--muted);}
+.gift-of b{color:var(--vault);}
+.gift-note{font-size:13px;padding:8px 12px;border:2px solid var(--pink);border-radius:12px;background:rgba(255,141,188,.08);}
+.gift-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;}
+.gift-acts .reco-btn{margin-top:0;}
+.gift-spend{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.gift-spend input[type=text]{width:170px;font-size:13px;padding:6px 10px;border:2px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink);}
+.gift-spend .money-input input{width:90px;}
+.gift-side .mini input{width:100%;}
+.gift-log{font-size:12.5px;display:flex;flex-direction:column;gap:4px;}
+.gift-log div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line-soft);padding-bottom:3px;}
+.gift-log small{color:var(--muted);margin-left:4px;}
+.gift-log b{font-family:var(--mono);}
+.gift-log b.in{color:var(--vault);} .gift-log b.out{color:var(--pink);}
 .paidoff-list b{color:var(--vault);}
 .reco-btn{margin-top:8px;font-family:var(--body);font-size:13px;font-weight:800;color:#0B140E;background:var(--gold);border:2px solid #000;border-radius:999px;padding:5px 14px;cursor:pointer;box-shadow:2px 2px 0 var(--shadow);}
 .reco-paying{display:block;margin-top:8px;padding:8px 12px;border:2px solid var(--vault);border-radius:12px;background:rgba(61,186,112,.08);}
@@ -713,6 +750,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
         <input type="text" class="jt-name" id="jtName" placeholder="e.g. new headphones">
         <label class="field-label" for="jtPrice">Price</label>
         <div class="money-input big"><span>$</span><input type="number" step="0.01" min="0" inputmode="decimal" id="jtPrice" placeholder="0.00"></div>
+        <label class="jt-gift"><input type="checkbox" id="jtGift"> <span>It's a gift: pay from the Gift Fund <small id="jtGiftHave"></small></span></label>
         <div class="jt-limits" id="jtLimits"></div>
       </div>
       <div>
@@ -823,6 +861,17 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
     <div class="goals" id="goalsBody"></div>
   </div>
 
+  <div class="panel" id="giftPanel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <span class="ptile" style="background:var(--pink)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="12" width="24" height="7" rx="1.5"/><path d="M6 19v9h20v-9M16 12v16"/><path d="M16 12c-2-5-8-6-8-2.5S13 12 16 12zM16 12c2-5 8-6 8-2.5S19 12 16 12z"/></svg></span>
+        <h2>Gift Fund</h2>
+      </div>
+    </div>
+    <div class="panel-sub">Money set aside for holidays, birthdays and other gifts. While it's kept in checking, it's counted as spoken for, so it comes out of your walking-around money and safe to spend.</div>
+    <div id="giftBody"></div>
+  </div>
+
   <div class="panel" id="planningPanel">
     <div class="panel-head">
       <div class="panel-title">
@@ -832,6 +881,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
     </div>
     <div class="panel-sub" id="planningIntro">Tick <b>Credit</b> on a bill and give it a balance to see a payoff plan here.</div>
     <div id="planningBody" style="display:none;">
+      <div class="pause-box" id="pauseBox"></div>
       <div class="debit-row">
         <label for="debitInput">Debit left over</label>
         <input type="number" step="0.01" id="debitInput" placeholder="0.00">
@@ -1025,6 +1075,7 @@ function upgradeData(d){
   if(d.debitLeftover===undefined) d.debitLeftover = null;
   if(!d.checking) d.checking = {balance:null, cushion:0, updated:null};
   if(!Array.isArray(d.goals)) d.goals = [];
+  if(d.pause===undefined) d.pause = null;
   if(!Array.isArray(d.pay)) d.pay = [];
   if(!Array.isArray(d.exp)) d.exp = [];
   if(!Array.isArray(d.sav)) d.sav = [];
@@ -1314,6 +1365,7 @@ function render(){
   renderPay();
   renderSav();
   renderGoals();
+  renderGift();
   renderHero();
   renderBalance();
   renderPlanning();
@@ -1376,6 +1428,9 @@ function renderPay(){
       if(row.payoff){
         tag += `<span class="split-tag payoff-tag">payoff this cycle · covers the ${money(row.payoff.min||0)} minimum</span>`;
       }
+      if(row.hold){
+        tag += `<span class="split-tag hold-tag">⏸️ on hold until ${ymLabel(row.hold.until)} · normally ${money(row.hold.min||0)} · <button type="button" class="linkbtn ghost" data-hold-cancel="${escapeHtml(row.groupId||row.id)}">end hold</button></span>`;
+      }
       let paylinkArea;
       if(editingLinkIds.has(row.id)){
         paylinkArea = `<div class="paylink-row"><input type="url" class="paylink-input" placeholder="payment link (optional)" value="${escapeHtml(row.payUrl||'')}" data-f="payUrl" data-editing="1"></div>`;
@@ -1416,6 +1471,8 @@ function renderPay(){
 
     const amountCell = isMonthlyBillsRow
       ? `<div class="amt-wrap"><span class="synced-amount" title="synced automatically from Monthly Expenditures">${row.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`
+      : row.hold
+      ? `<div class="amt-wrap"><input type="number" step="0.01" value="${row.amount.toFixed(2)}" disabled title="on hold until ${ymLabel(row.hold.until)}; end the hold to change it"></div>`
       : `<div class="amt-wrap"><input type="number" step="0.01" value="${row.amount.toFixed(2)}" data-f="amount"></div>`;
 
     tr.innerHTML = `
@@ -1808,14 +1865,15 @@ function getCreditRows(){
   rows.forEach(r=>{
     const key = r.groupId || r.id;
     if(!grouped[key]){
-      grouped[key] = {key, name: r.name, debtBalance: r.debtBalance||0, amount: 0, min: 0, unpaidNow: 0, payingOff: false, payRow: null, rows: []};
+      grouped[key] = {key, name: r.name, debtBalance: r.debtBalance||0, amount: 0, min: 0, unpaidNow: 0, payingOff: false, payRow: null, rows: [], held: null};
     }
     const g = grouped[key];
     g.rows.push(r);
-    g.amount += r.amount;                                  // what's paid this cycle (the payoff amount when paying off)
-    g.min += r.payoff ? (r.payoff.min||0) : r.amount;      // the normal monthly payment
+    g.amount += r.amount;                                  // what's paid this cycle (the payoff amount when paying off; $0 while on hold)
+    g.min += r.payoff ? (r.payoff.min||0) : r.hold ? (r.hold.min||0) : r.amount;      // the normal monthly payment
     if(!r.paid) g.unpaidNow += r.amount;                   // already counted in "bills still to pay"
     if(r.payoff){ g.payingOff = true; g.payRow = r; }
+    if(r.hold) g.held = r.hold;
     g.debtBalance = Math.max(g.debtBalance, r.debtBalance||0);
   });
   return Object.values(grouped);
@@ -1853,6 +1911,94 @@ function cancelPayoff(key){
   delete t.payoff;
   render(); queueSave();
 }
+// ---- Putting a debt on hold (Nov 12, 2026: the phone, paid in one go at the end of January) ----
+// Every bill of the debt keeps its normal payment in row.hold.min and pays $0 until the hold month.
+// Advance a month takes nothing off its balance while it's held. Once a bill of the debt lands in the hold
+// month, releaseHolds() turns it into "pay it off this cycle" for the whole balance.
+const ymOf = iso => (iso||'').slice(0,7);
+function ymAdd(m, n){ const [y,mo] = m.split('-').map(Number); const d = new Date(y, mo-1+n, 1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function ymLabel(m, short){ if(!m) return ''; const [y,mo] = m.split('-').map(Number); return new Date(y, mo-1, 1).toLocaleDateString(undefined, short ? {month:'short', year:'numeric'} : {month:'long', year:'numeric'}); }
+function ymDiff(a, b){ const [ay,am] = a.split('-').map(Number), [by,bm] = b.split('-').map(Number); return (by*12+bm) - (ay*12+am); }
+function planMonth(){ const n = getNextPaycheck(); return ymOf(n ? n.date : localToday()); }
+function monthChoices(from, count, pick){
+  let h = ''; for(let i=1;i<=count;i++){ const m = ymAdd(from, i); h += `<option value="${m}" ${m===pick?'selected':''}>${ymLabel(m)}</option>`; } return h;
+}
+function rowMonth(r){
+  const pc = r.paycheckId ? incomeRows().find(i=>i.id===r.paycheckId) : null;
+  return ymOf((pc && pc.date) || r.dueDate);
+}
+function startHold(key, until){
+  const rows = payoffRows(key);
+  if(!rows.length || !until) return;
+  pushUndoSnapshot();
+  const t = rows.find(r=>r.payoff);
+  if(t){ t.amount = t.payoff.min||0; delete t.payoff; }
+  rows.forEach(r=>{
+    if(r.hold){ r.hold.until = until; return; }
+    r.hold = {until, min: r.amount||0};
+    r.amount = 0;
+  });
+  render(); queueSave();
+}
+function endHold(key, payItAll){
+  const rows = payoffRows(key);
+  rows.forEach(r=>{ if(r.hold){ r.amount = r.hold.min||0; delete r.hold; } });
+  if(payItAll && rows.length){
+    const t = rows[rows.length-1];
+    t.payoff = {min: t.amount||0};
+    syncPayoff(key);
+  }
+}
+function cancelHold(key){ pushUndoSnapshot(); endHold(key, false); render(); queueSave(); }
+// after Advance a month: a held debt whose bill is now in its hold month gets paid off this cycle
+function releaseHolds(){
+  const done = [];
+  const keys = [...new Set(data.pay.filter(r=>r.type==='bill' && r.hold).map(r=>r.groupId||r.id))];
+  keys.forEach(k=>{
+    const rows = payoffRows(k);
+    const h = (rows.find(r=>r.hold)||{}).hold;
+    if(!h) return;
+    if(rows.some(r=>rowMonth(r) >= h.until)){
+      endHold(k, true);
+      const t = rows.find(r=>r.payoff);
+      done.push(`${rows[0].name}: hold's over, set to pay off ${money(t ? t.amount : 0)} this cycle`);
+    }
+  });
+  return done;
+}
+
+// ---- Holiday pause (data.pause = {until:'YYYY-MM', extra}) ----
+// While the plan's month is before `until`: no extra to debt, no "pay it off" nudges, and the leftover goes to the
+// Gift Fund. Minimums still get paid. `extra` is what the plan sent to debt when it was paused; the payoff dates
+// assume that picks back up in the resume month.
+function pauseActive(d){ d = d || data; return !!(d.pause && d.pause.until && planMonth() < d.pause.until); }
+function startPause(until){
+  pushUndoSnapshot();
+  const p = computePlanning();
+  data.pause = {until, extra: p ? p.toCredit : 0, at: localToday()};
+  render(); queueSave();
+}
+function endPause(){ pushUndoSnapshot(); data.pause = null; render(); queueSave(); }
+
+// ---- Gift Fund (data.giftFund = {saved, target, where:'checking'|'savings', log:[{id,name,amt,at}]}) ----
+function giftFund(){
+  if(!data.giftFund) data.giftFund = {saved:0, target:0, where:'checking', log:[]};
+  if(!Array.isArray(data.giftFund.log)) data.giftFund.log = [];
+  return data.giftFund;
+}
+// money in the fund that's sitting in checking (spoken for, so it comes out of walking-around money)
+function giftInChecking(){ const g = data.giftFund; return g && g.where !== 'savings' ? Math.max(0, round2(g.saved||0)) : 0; }
+function giftMove(amt, name){
+  amt = round2(amt);
+  if(!amt) return;
+  const g = giftFund();
+  g.saved = Math.max(0, round2((g.saved||0) + amt));
+  g.log.push({id: uid(), name: name || (amt > 0 ? 'Added' : 'Spent'), amt, at: localToday()});
+  if(g.log.length > 40) g.log = g.log.slice(-40);
+  render(); queueSave();
+  flashSave(amt > 0 ? `${money(amt)} into the gift fund` : `${money(-amt)} out of the gift fund${name ? ' · ' + name : ''}`, false);
+}
+
 function payoffWhen(c){
   const r = c.payRow || c.rows[c.rows.length-1];
   const pc = r && r.paycheckId ? incomeRows().find(i=>i.id===r.paycheckId) : null;
@@ -1874,8 +2020,10 @@ function cycleEnd(){
   // split bills: your partner's share is still coming back to you until you tick it received
   const backs = data.pay.filter(r=>r.type==='bill' && r.split && !r.split.received && shareOf(r) > 0);
   const backTotal = r2(backs.reduce((s,r)=>s+shareOf(r),0));
-  const endOfCycle = has ? r2(ck.balance + paysTotal + backTotal - billsTotal - cushion) : null;
-  return {has, balance:ck.balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal};
+  // the Gift Fund, when it's kept in checking, is spoken for
+  const giftHeld = giftInChecking();
+  const endOfCycle = has ? r2(ck.balance + paysTotal + backTotal - billsTotal - cushion - giftHeld) : null;
+  return {has, balance:ck.balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal, giftHeld};
 }
 
 function computePlanning(){
@@ -1893,9 +2041,19 @@ function computePlanning(){
   const leftover = hasOverride ? Math.round(data.debitLeftover * 100) / 100 : calcLeftover;
   const credits = getCreditRows().slice().sort((a,b)=>(a.debtBalance)-(b.debtBalance));
   // debts being paid off this cycle are already in the bills; the extra goes to the next one
-  const open = credits.filter(c=>!c.payingOff);
-  let toCredit = 0, toSavings = 0;
-  if(leftover > 0){
+  // (debts on hold are skipped too: nothing goes to them until their hold month)
+  const open = credits.filter(c=>!c.payingOff && !c.held);
+  const paused = pauseActive();
+  let toCredit = 0, toSavings = 0, toGift = 0;
+  if(paused){
+    // holiday pause: no extra to debt; the leftover goes to the Gift Fund (up to its goal, if it has one), the rest to savings
+    if(leftover > 0){
+      const g = data.giftFund || {};
+      const room = (g.target||0) > 0 ? Math.max(0, round2(g.target - (g.saved||0))) : Infinity;
+      toGift = Math.round(Math.min(leftover, room) * 100) / 100;
+      toSavings = Math.round((leftover - toGift) * 100) / 100;
+    }
+  } else if(leftover > 0){
     if(open.length > 0){
       const priority = open[0];
       // this cycle's unpaid minimum is already counted in the bills, so clearing it only takes the rest
@@ -1910,20 +2068,31 @@ function computePlanning(){
       toSavings = leftover;
     }
   }
-  return {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits, open, fromChecking, ce};
+  // payoff dates: while paused, no extra until the resume month, then what the plan sent before the pause
+  const simExtra = paused ? (data.pause.extra||0) : toCredit;
+  const simFrom = paused ? ymDiff(ymOf(next.date), data.pause.until) + 1 : 1;
+  return {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, toGift, paused, credits, open, fromChecking, ce, simExtra, simFrom};
 }
 
-function simulatePayoff(credits, extraMonthly, startDate){
+function simulatePayoff(credits, extraMonthly, startDate, extraFrom){
   // Month 1 is this cycle (the next paycheck's month), so a debt cleared by this cycle's payments shows this month.
-  const sim = credits.map(c=>({name:c.name, balance:c.debtBalance, payment:c.amount, min:(c.min!==undefined?c.min:c.amount), off:!!c.payingOff}));
+  // extraFrom: the month the extra starts (holiday pause). A debt on hold pays nothing until its hold month, then all of it.
+  extraFrom = extraFrom || 1;
+  const startYM = startDate.getFullYear()+'-'+String(startDate.getMonth()+1).padStart(2,'0');
+  const sim = credits.map(c=>({name:c.name, balance:c.debtBalance, payment:c.amount, min:(c.min!==undefined?c.min:c.amount), off:!!c.payingOff,
+    holdMonth: c.held ? Math.max(1, ymDiff(startYM, c.held.until) + 1) : 0}));
   let freed = 0;
   let month = 0;
   const results = [];
   while(sim.length > 0 && month < 480){
     month++;
-    let target = sim.findIndex(d=>!d.off); if(target < 0) target = 0;
+    const waiting = d => d.holdMonth && month <= d.holdMonth;
+    let target = sim.findIndex(d=>!d.off && !waiting(d)); if(target < 0) target = sim.findIndex(d=>!waiting(d));
+    // money freed up before anything can take it (everything left is on hold) just waits a month
+    const extraNow = (month >= extraFrom ? extraMonthly : 0) + freed;
     sim.forEach((d,i)=>{
-      const pay = d.payment + (i===target ? extraMonthly + freed : 0);
+      let pay = d.payment + (i===target ? extraNow : 0);
+      if(d.holdMonth) pay = month < d.holdMonth ? 0 : month === d.holdMonth ? d.balance : d.min;
       d.balance = Math.round((d.balance - pay) * 100) / 100;
     });
     for(let i=sim.length-1; i>=0; i--){
@@ -1960,6 +2129,37 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 });
 
+let holdPick = null;   // debt key whose "hold until…" picker is open in the payoff table
+function renderPauseBox(planning){
+  const box = document.getElementById('pauseBox');
+  if(!box) return;
+  const pm = planMonth();
+  const p = data.pause;
+  if(p && planning.paused){
+    box.className = 'pause-box on';
+    box.innerHTML = `<div class="pz-title">⏸️ Plan paused until ${ymLabel(p.until)}</div>
+      <div class="pz-text">Minimum payments still get paid, but nothing extra goes to debt and nothing tells you to pay a debt off. Whatever's left goes to your <a href="#giftPanel" class="pz-link">Gift Fund</a>. The payoff dates below assume the plan picks back up in ${ymLabel(p.until, true)}${p.extra ? ` with the ${money(p.extra)} extra it was sending before` : ''}.</div>
+      <div class="pz-acts"><span class="dim">Resume in</span> <select id="pauseUntil">${monthChoices(pm, 6, p.until)}</select>
+        <button type="button" class="linkbtn" id="pauseEnd">resume now</button></div>`;
+  } else if(p){
+    box.className = 'pause-box back';
+    box.innerHTML = `<div class="pz-title">👋 Welcome back. The holiday pause is over.</div>
+      <div class="pz-text">It's ${ymLabel(pm)}, so the plan is back on: walking-around money goes to debt and savings again, and the payoff dates count from what you have now. Tap Start fresh to clear this note.${(data.giftFund && data.giftFund.saved > 0) ? ` Your Gift Fund still has <b>${money(data.giftFund.saved)}</b>; it stays put for the next birthday or holiday.` : ''}</div>
+      <div class="pz-acts"><button type="button" class="reco-btn" id="pauseEnd">▶ Start fresh</button></div>`;
+  } else {
+    box.className = 'pause-box off';
+    box.innerHTML = `<span class="dim">Holidays or a tight month coming up?</span>
+      <button type="button" class="linkbtn" id="pauseStart">⏸️ Pause the plan</button>
+      <span class="dim">until</span> <select id="pauseUntil">${monthChoices(pm, 6, ymAdd(pm, 2))}</select>`;
+  }
+  const s = document.getElementById('pauseStart');
+  if(s) s.onclick = ()=> startPause(document.getElementById('pauseUntil').value);
+  const e = document.getElementById('pauseEnd');
+  if(e) e.onclick = endPause;
+  const u = document.getElementById('pauseUntil');
+  if(u && p && planning.paused) u.onchange = ()=>{ pushUndoSnapshot(); data.pause.until = u.value; render(); queueSave(); };
+}
+
 function renderPlanning(){
   const intro = document.getElementById('planningIntro');
   const body = document.getElementById('planningBody');
@@ -1972,7 +2172,8 @@ function renderPlanning(){
   intro.style.display = 'none';
   body.style.display = '';
 
-  const {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, credits, open, fromChecking, ce} = planning;
+  const {next, income, billsTotal, leftover, calcLeftover, hasOverride, toCredit, toSavings, toGift, paused, credits, open, fromChecking, ce} = planning;
+  renderPauseBox(planning);
 
   // keep the debit field in sync (but never overwrite it while you're typing in it)
   const debitInput = document.getElementById('debitInput');
@@ -1987,24 +2188,28 @@ function renderPlanning(){
       ? `calculated from in checking right now − bills: ${numFmt(calcLeftover)}. Type a number to plan with something else.`
       : `calculated: ${numFmt(calcLeftover)} (income − bills; enter your checking balance for a better number). Type a number to override.`;
 
-  // pie: Bills / Savings(extra) / Credit(extra), as a share of this paycheck
-  const pieTotal = billsTotal + toSavings + toCredit || 1;
+  // pie: Bills / Savings(extra) / Credit(extra) — or Gift Fund while paused — as a share of this paycheck
+  const third = paused ? toGift : toCredit;
+  const thirdColor = paused ? 'var(--pink)' : 'var(--brick)';
+  const pieTotal = billsTotal + toSavings + third || 1;
   const p1 = billsTotal/pieTotal*100;
   const p2 = p1 + toSavings/pieTotal*100;
   document.getElementById('planningPie').style.background =
-    `conic-gradient(var(--pine) 0% ${p1}%, var(--brass) ${p1}% ${p2}%, var(--brick) ${p2}% 100%)`;
+    `conic-gradient(var(--pine) 0% ${p1}%, var(--brass) ${p1}% ${p2}%, ${thirdColor} ${p2}% 100%)`;
   document.getElementById('planningLegend').innerHTML = `
     <div class="pie-legend-row"><span class="pie-swatch" style="background:var(--pine)"></span>Bills<b>${money(billsTotal)}</b></div>
     <div class="pie-legend-row"><span class="pie-swatch" style="background:var(--brass)"></span>Savings<b>${money(toSavings)}</b></div>
-    <div class="pie-legend-row"><span class="pie-swatch" style="background:var(--brick)"></span>Credit<b>${money(toCredit)}</b></div>
+    <div class="pie-legend-row"><span class="pie-swatch" style="background:${thirdColor}"></span>${paused ? 'Gift Fund' : 'Credit'}<b>${money(third)}</b></div>
   `;
 
-  const priority = open[0] || null;
+  const priority = paused ? null : (open[0] || null);
   const paying = credits.filter(c=>c.payingOff);
   const payingNote = paying.map(c=>{
     const w = payoffWhen(c);
     return `<span class="reco-paying">✓ Paying off <b>${escapeHtml(c.name)}</b>: ${money(c.debtBalance)} ${w.date ? `with ${w.label==='due' ? 'the bill due' : `<b>${escapeHtml(w.label)}</b> on`} ${shortDate(w.date)}` : 'this cycle'}. That covers its ${money(c.min)} minimum, so there's no separate minimum to pay. <button type="button" class="linkbtn" data-payoff-cancel="${escapeHtml(c.key)}">not paying it off</button></span>`;
   }).join('');
+  const heldNote = credits.filter(c=>c.held).map(c=>
+    `<span class="reco-paying held">⏸️ <b>${escapeHtml(c.name)}</b> is on hold: no ${money(c.min)} payments until <b>${ymLabel(c.held.until)}</b>, then the whole balance (${money(c.debtBalance)} now) gets paid off in one go. <button type="button" class="linkbtn" data-hold-cancel="${escapeHtml(c.key)}">end the hold</button></span>`).join('');
   let payoffNote = '';
   if(priority){
     const toClear = Math.max(0, Math.round((priority.debtBalance - priority.unpaidNow)*100)/100);
@@ -2013,30 +2218,51 @@ function renderPlanning(){
          <br><button type="button" class="reco-btn" data-payoff-start="${escapeHtml(priority.key)}">✓ Pay it off this cycle</button>`
       : `Priority target: <b>${escapeHtml(priority.name)}</b> (smallest balance, ${money(priority.debtBalance)} left).`;
   }
+  const giftHeldLine = ce && ce.giftHeld ? ` − ${money(ce.giftHeld)} already in the gift fund` : '';
+  const split = paused
+    ? (toGift >= 0.01
+        ? `Recommended split: <b>${money(toGift)} → Gift Fund</b>${toSavings > 0 ? `, <b>${money(toSavings)} → Savings</b> (that fills the gift fund's goal)` : ''}.`
+        : `The gift fund's goal is met 🎉 Recommended: <b>${money(toSavings)} → Savings</b>.`)
+      + (toGift >= 0.01 ? `<br><button type="button" class="reco-btn pink" id="giftFromPlan">🎁 Put ${money(toGift)} in the gift fund</button>` : '')
+    : `Recommended split: <b>${money(toSavings)} → Savings</b>${priority ? `, <b>${money(toCredit)} → ${escapeHtml(priority.name)}</b>` : ''}.`;
 
   document.getElementById('planningReco').innerHTML = `
     ${hasOverride
       ? `You have <span class="reco-amt">${money(leftover)} in debit right now</span> (you entered this; the calculated figure is ${money(calcLeftover)}).`
       : fromChecking
-        ? `${money(ce.balance)} in checking now + ${money(ce.paysTotal)} in paychecks still coming${ce.backTotal ? ` + ${money(ce.backTotal)} coming back from ${escapeHtml(partnerName())}` : ''} − ${money(ce.billsTotal)} in bills still to pay${ce.cushion ? ` − ${money(ce.cushion)} cushion` : ''} leaves you
+        ? `${money(ce.balance)} in checking now + ${money(ce.paysTotal)} in paychecks still coming${ce.backTotal ? ` + ${money(ce.backTotal)} coming back from ${escapeHtml(partnerName())}` : ''} − ${money(ce.billsTotal)} in bills still to pay${ce.cushion ? ` − ${money(ce.cushion)} cushion` : ''}${giftHeldLine} leaves you
     <span class="reco-amt">${money(leftover)} walking-around money</span>`
         : `This cycle: ${money(income)} in total income against ${money(billsTotal)} in bills leaves you
     <span class="reco-amt">${money(leftover)} walking-around money</span>`}
     ${payingNote}
+    ${heldNote}
     ${payoffNote}
     <br><br>
-    Recommended split: <b>${money(toSavings)} → Savings</b>${priority ? `, <b>${money(toCredit)} → ${escapeHtml(priority.name)}</b>` : ''}.
+    ${split}
     <br><br>
     <span style="opacity:0.85;font-size:12px;">Good time to actually move it: your next payday, <b>${escapeHtml(next.name)}</b> on ${shortDate(next.date)}.</span>
   `;
+  const gfp = document.getElementById('giftFromPlan');
+  if(gfp) gfp.onclick = ()=>{ pushUndoSnapshot(); giftMove(toGift, `From the plan (${monthYear(new Date(next.date+'T00:00:00'))})`); };
 
-  const results = simulatePayoff(credits, toCredit, new Date(next.date+'T00:00:00'));
+  const results = simulatePayoff(credits, planning.simExtra, new Date(next.date+'T00:00:00'), planning.simFrom);
   const byName = {}; credits.forEach(c=>{ byName[c.name] = c; });
+  const pm = planMonth();
   document.getElementById('payoffBody').innerHTML = results.map(r=>{
     const c = byName[r.name];
-    const btn = !c ? '' : c.payingOff
-      ? `<button type="button" class="po-tag" data-payoff-cancel="${escapeHtml(c.key)}" title="tap to stop paying it off and put the normal minimum back">✓ paying off this cycle <span class="po-x">✕</span></button>`
-      : `<button type="button" class="linkbtn ghost" data-payoff-start="${escapeHtml(c.key)}" title="pay the whole balance this cycle in place of the minimum">pay off this cycle</button>`;
+    let btn = '';
+    if(c && c.held){
+      btn = `<button type="button" class="po-tag hold" data-hold-cancel="${escapeHtml(c.key)}" title="tap to end the hold and put the normal ${money(c.min)} payment back">⏸️ on hold until ${ymLabel(c.held.until, true)} <span class="po-x">✕</span></button>`;
+    } else if(c && holdPick === c.key){
+      btn = `<span class="hold-pick">pay it all in <select data-hold-month>${monthChoices(pm, 6, ymAdd(pm, 2))}</select>
+        <button type="button" class="linkbtn" data-hold-ok="${escapeHtml(c.key)}">hold</button>
+        <button type="button" class="linkbtn ghost" data-hold-x="1">cancel</button></span>`;
+    } else if(c){
+      btn = (c.payingOff
+        ? `<button type="button" class="po-tag" data-payoff-cancel="${escapeHtml(c.key)}" title="tap to stop paying it off and put the normal minimum back">✓ paying off this cycle <span class="po-x">✕</span></button>`
+        : paused ? '' : `<button type="button" class="linkbtn ghost" data-payoff-start="${escapeHtml(c.key)}" title="pay the whole balance this cycle in place of the minimum">pay off this cycle</button>`)
+        + ` <button type="button" class="linkbtn ghost" data-hold-open="${escapeHtml(c.key)}" title="skip its payments for now and pay it all in a later month">hold…</button>`;
+    }
     return `<tr>
       <td>${escapeHtml(r.name)}${btn}</td>
       <td>${r.date.toLocaleDateString(undefined,{month:'short',year:'numeric'})}</td>
@@ -2059,11 +2285,11 @@ function monthYear(d){ return d.toLocaleDateString(undefined,{month:'short',year
 function monthsWord(n){ return n + (n===1 ? ' month' : ' months'); }
 function whatIfResults(planning, payments){
   const credits = planning.credits.map(c=>{
-    if(c.payingOff || payments[c.key] === undefined) return c;
+    if(c.payingOff || c.held || payments[c.key] === undefined) return c;
     return Object.assign({}, c, {amount: payments[c.key], min: payments[c.key]});
   });
-  const extra = whatIfExtra ? planning.toCredit : 0;
-  const res = simulatePayoff(credits, extra, new Date(planning.next.date+'T00:00:00'));
+  const extra = whatIfExtra ? planning.simExtra : 0;
+  const res = simulatePayoff(credits, extra, new Date(planning.next.date+'T00:00:00'), planning.simFrom);
   const by = {}; res.forEach(r=>{ by[r.name] = r; });
   return credits.map(c=>({c, r: by[c.name] || null}));
 }
@@ -2071,15 +2297,25 @@ function renderWhatIf(planning, keepInputs){
   const rowsEl = document.getElementById('wiRows');
   if(!rowsEl) return;
   const credits = planning.credits;
-  Object.keys(whatIf).forEach(k=>{ if(!credits.some(c=>c.key===k && !c.payingOff)) delete whatIf[k]; });
+  Object.keys(whatIf).forEach(k=>{ if(!credits.some(c=>c.key===k && !c.payingOff && !c.held)) delete whatIf[k]; });
   document.getElementById('wiExtra').checked = whatIfExtra;
-  document.getElementById('wiExtraText').innerHTML = planning.toCredit > 0
+  document.getElementById('wiExtraText').innerHTML = planning.paused
+    ? (planning.simExtra > 0
+      ? `Also put the plan's extra <b>${money(planning.simExtra)}</b> toward debt every month from ${ymLabel(data.pause.until, true)}, when the pause ends (like the table above).`
+      : `Also put the plan's extra toward debt every month once the pause ends (it was $0 when you paused).`)
+    : planning.toCredit > 0
     ? `Also put the plan's extra <b>${money(planning.toCredit)}</b> toward debt every month (like the table above). Untick to see just the monthly payments.`
     : `Also put the plan's extra toward debt every month (it's $0 right now).`;
   const base = whatIfResults(planning, {});
   const tried = whatIfResults(planning, whatIf);
   const rowsHtml = credits.map((c,i)=>{
     const b = base[i].r, t = tried[i].r;
+    if(c.held){
+      return `<div class="wi-row" data-k="${escapeHtml(c.key)}">
+        <div class="wi-name">${escapeHtml(c.name)}<span class="d">${money(c.debtBalance)} left · on hold</span></div>
+        <div class="wi-out"><span class="now">${t ? monthYear(t.date) : ''}</span><span class="gain same">⏸️ paid in one go in ${ymLabel(c.held.until, true)}</span></div>
+      </div>`;
+    }
     if(c.payingOff){
       return `<div class="wi-row" data-k="${escapeHtml(c.key)}">
         <div class="wi-name">${escapeHtml(c.name)}<span class="d">${money(c.debtBalance)} left · paying it all off this cycle</span></div>
@@ -2121,7 +2357,7 @@ function renderWhatIf(planning, keepInputs){
   });
   // while typing, keep the boxes as they are (rebuilding them would move the cursor) and only refresh the rest
   const rowEls = rowsEl.querySelectorAll('.wi-row');
-  const sameRows = rowEls.length === credits.length && credits.every((c,i)=>rowEls[i].dataset.k === c.key && !!rowEls[i].querySelector('input') === !c.payingOff);
+  const sameRows = rowEls.length === credits.length && credits.every((c,i)=>rowEls[i].dataset.k === c.key && !!rowEls[i].querySelector('input') === !(c.payingOff || c.held));
   if(keepInputs && sameRows){
     rowsHtml.forEach((h,i)=>{
       const tmp = document.createElement('div'); tmp.innerHTML = h;
@@ -2139,8 +2375,8 @@ function renderWhatIf(planning, keepInputs){
   const last = arr => arr.reduce((m,x)=> x.r ? (m && m.months >= x.r.months ? m : x.r) : m, null);
   const neverB = base.some(x=>!x.r), neverT = tried.some(x=>!x.r);
   const lb = last(base), lt = last(tried);
-  const extraMo = wr2(credits.reduce((s,c)=>s + (whatIf[c.key] !== undefined ? whatIf[c.key] - c.amount : 0), 0));
-  const anyChange = credits.some(c=>whatIf[c.key] !== undefined && whatIf[c.key] !== c.amount);
+  const extraMo = wr2(credits.reduce((s,c)=>s + (!c.held && whatIf[c.key] !== undefined ? whatIf[c.key] - c.amount : 0), 0));
+  const anyChange = credits.some(c=>!c.held && whatIf[c.key] !== undefined && whatIf[c.key] !== c.amount);
   const totalEl = document.getElementById('wiTotal');
   if(neverT){
     totalEl.innerHTML = `Debt-free: <b>not within 40 years</b> with these payments.`;
@@ -2157,7 +2393,14 @@ document.addEventListener('click', e=>{
   const s = e.target.closest('[data-payoff-start]');
   if(s){ startPayoff(s.dataset.payoffStart); return; }
   const c = e.target.closest('[data-payoff-cancel]');
-  if(c){ cancelPayoff(c.dataset.payoffCancel); }
+  if(c){ cancelPayoff(c.dataset.payoffCancel); return; }
+  const ho = e.target.closest('[data-hold-open]');
+  if(ho){ holdPick = ho.dataset.holdOpen; renderPlanning(); return; }
+  if(e.target.closest('[data-hold-x]')){ holdPick = null; renderPlanning(); return; }
+  const hk = e.target.closest('[data-hold-ok]');
+  if(hk){ const sel = hk.parentElement.querySelector('[data-hold-month]'); holdPick = null; startHold(hk.dataset.holdOk, sel ? sel.value : null); return; }
+  const hc = e.target.closest('[data-hold-cancel]');
+  if(hc){ cancelHold(hc.dataset.holdCancel); }
 });
 document.addEventListener('DOMContentLoaded', ()=>{
   const box = document.getElementById('whatIf');
@@ -2328,11 +2571,13 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
     else if(row.mirror){ /* your share of your partner's bill moves when they advance their month */ }
     else { row.dueDate = addMonths(row.dueDate, 1); row.paid = false; if(row.split) row.split.received = false; }
   });
+  // a debt on hold whose bill is now in its hold month: pay it all off this cycle
+  const released = releaseHolds();
 
   render();
   queueSave();
   const n = Object.keys(debtGroups).length;
-  if(n) flashSave(`advanced a month · ${money(round2(tookOff))} off ${n} debt balance${n===1?'':'s'}${paidOff.length ? ' · paid off: ' + paidOff.join(', ') + ' 🎉 (taken off your bills)' : ''}`, false, 4500);
+  if(n || released.length) flashSave(`advanced a month · ${money(round2(tookOff))} off ${n} debt balance${n===1?'':'s'}${paidOff.length ? ' · paid off: ' + paidOff.join(', ') + ' 🎉 (taken off your bills)' : ''}${released.length ? ' · ' + released.join(' · ') : ''}`, false, released.length ? 7000 : 4500);
 });
 
 // ================= Checking, Savings Goals, account cards =================
@@ -2398,10 +2643,11 @@ function computeChecking(){
   const dueTotal = round2(due.reduce((s,r)=>s+r.amount,0) + heldFromChecking);  // everything that has to come out of checking now
   const has = typeof ck.balance==='number' && !isNaN(ck.balance);
   const cushion = ck.cushion || 0;
-  const safe = has ? round2(ck.balance - dueTotal - cushion) : null;
+  const giftHeld = giftInChecking();
+  const safe = has ? round2(ck.balance - dueTotal - cushion - giftHeld) : null;
   const days = next ? daysBetween(today, next.date) : null;
   const firstBillsTotal = round2(dueTotal - heldFromChecking);
-  return {has, balance:ck.balance, cushion, next, first, due, dueTotal, firstBillsTotal, held, heldIds, heldNowIds, heldTotal, heldFromChecking, heldInSavings, catOf, nextDue, incs, receivedIds, safe, days, today};
+  return {has, balance:ck.balance, cushion, giftHeld, next, first, due, dueTotal, firstBillsTotal, held, heldIds, heldNowIds, heldTotal, heldFromChecking, heldInSavings, catOf, nextDue, incs, receivedIds, safe, days, today};
 }
 
 function renderChecking(){
@@ -2437,6 +2683,7 @@ function renderChecking(){
       ${c.heldFromChecking ? `<div class="ln">− held over in checking<b>${money(c.heldFromChecking)}</b></div>` : ''}
       ${c.heldInSavings ? `<div class="ln" style="opacity:.75">held over in savings (not from checking)<b>${money(c.heldInSavings)}</b></div>` : ''}
       ${c.cushion ? `<div class="ln">− cushion<b>${money(c.cushion)}</b></div>` : ''}
+      ${c.giftHeld ? `<div class="ln">− gift fund (kept in checking)<b>${money(c.giftHeld)}</b></div>` : ''}
       <div class="ln total">${c.safe<0 ? 'Short by' : 'Yours to spend'}<b>${money(Math.abs(c.safe))}</b></div>`;
   }
 
@@ -2480,7 +2727,8 @@ function renderChecking(){
         ${r.split ? `<span class="tag-held share" title="split with ${escapeHtml(partnerName())}: ${money(shareOf(r))} comes back to you${r.split.received ? ' (received)' : ''}">split · ${r.split.received ? '✓ ' : ''}${money(shareOf(r))} back</span>` : ''}
         ${r.mirror ? `<span class="tag-held share" title="your share of ${escapeHtml(partnerName())}'s bill">to ${escapeHtml(partnerName())}</span>` : ''}
         ${r.payoff ? `<span class="tag-held payoff" title="paying this debt off; covers the normal ${money(r.payoff.min||0)} minimum">payoff</span>` : ''}
-        ${r.paid ? '<span class="tag-paid">paid</span>' : [
+        ${r.hold ? `<span class="tag-held hold" title="normally ${money(r.hold.min||0)}; paid off in one go in ${ymLabel(r.hold.until)}">on hold · ${ymLabel(r.hold.until, true)}</span>` : ''}
+        ${r.paid ? '<span class="tag-paid">paid</span>' : r.hold ? '' : [
             (!c.heldIds.has(r.id) && (r.dueDate||'') < c.today) ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : '',
             !c.heldIds.has(r.id) ? ''
               : c.heldNowIds.has(r.id) ? `<span class="tag-held ${c.catOf(r)}" title="paid with money held from the last paycheck, kept in ${c.catOf(r)}">held over · ${c.catOf(r)}</span>`
@@ -2596,6 +2844,7 @@ function renderAccounts(){
     sub = `<b class="${ch<0?'bad':'good'}">${ch<0?'↓':'↑'} ${money(Math.abs(ch))}</b> in ${escapeHtml(last.month)}`;
   }
   if(goalSaved > 0) sub += `${sub ? ' · ' : ''}${money(goalSaved)} in goals`;
+  if(data.giftFund && data.giftFund.where === 'savings' && data.giftFund.saved > 0) sub += `${sub ? ' · ' : ''}${money(data.giftFund.saved)} gift fund`;
   document.getElementById('acctSavingsSub').innerHTML = sub || 'add a month below';
 
   // Credit
@@ -2609,7 +2858,7 @@ function renderAccounts(){
     crSub = `${credits.length} debt${credits.length===1?'':'s'}`;
     const p = computePlanning();
     if(p && p.credits.length){
-      const res = simulatePayoff(p.credits, p.toCredit, new Date(p.next.date+'T00:00:00'));
+      const res = simulatePayoff(p.credits, p.simExtra, new Date(p.next.date+'T00:00:00'), p.simFrom);
       if(res.length === p.credits.length){
         const lastDate = res[res.length-1].date;
         crSub += ` · debt-free around <b>${lastDate.toLocaleDateString(undefined,{month:'short',year:'numeric'})}</b>`;
@@ -2735,19 +2984,76 @@ document.getElementById('addGoal').addEventListener('click', ()=>{
   if(names.length) names[names.length-1].focus();
 });
 
+// ---------- Gift Fund ----------
+function renderGift(){
+  const box = document.getElementById('giftBody');
+  if(!box || !data) return;
+  const g = data.giftFund || {saved:0, target:0, where:'checking', log:[]};
+  const saved = g.saved||0, target = g.target||0;
+  const paused = pauseActive();
+  const log = (g.log||[]).slice(-6).reverse();
+  box.innerHTML = `
+    <div class="gift-grid">
+      <div class="gift-main">
+        <div class="gift-amt">${money(saved)}</div>
+        <div class="gift-of" id="giftOf"></div>
+        <div class="goal-bar" id="giftBar" style="--gc:var(--pink)"><div class="goal-fill"></div></div>
+        ${paused ? `<div class="gift-note">⏸️ The plan is paused until ${ymLabel(data.pause.until)}, so Payment Planning sends what's left over here.</div>` : ''}
+        <div class="gift-acts">
+          <button type="button" class="reco-btn pink" id="giftAddBtn">+ Add money</button>
+          <span class="gift-spend"><input type="text" id="giftSpendName" placeholder="what was it? (optional)"><span class="money-input"><span>$</span><input type="number" step="0.01" min="0" inputmode="decimal" id="giftSpendAmt" placeholder="0.00"></span><button type="button" class="linkbtn" id="giftSpendBtn">− spent it</button></span>
+        </div>
+      </div>
+      <div class="gift-side">
+        <div class="mini"><span>Goal (optional)</span><input type="number" step="0.01" inputmode="decimal" id="giftTarget" value="${target ? target.toFixed(2) : ''}" placeholder="no goal"></div>
+        <div class="mini"><span>Kept in</span><select id="giftWhere"><option value="checking" ${g.where!=='savings'?'selected':''}>checking</option><option value="savings" ${g.where==='savings'?'selected':''}>savings</option></select></div>
+        <div class="gift-log">${log.length ? log.map(l=>`<div><span>${escapeHtml(l.name)} <small>${shortDate(l.at)}</small></span><b class="${l.amt<0?'out':'in'}">${l.amt<0?'−':'+'}${money(Math.abs(l.amt))}</b></div>`).join('') : '<div class="dim">Nothing in or out yet.</div>'}</div>
+      </div>
+    </div>`;
+  document.getElementById('giftAddBtn').addEventListener('click', e=>{
+    e.stopPropagation();   // the page closes the popup on any other click
+    openQuickAdd(e.currentTarget, giftFund(), 'saved', {label: 'the gift fund', onApply: total=>{ pushUndoSnapshot(); giftMove(total, 'Added'); }});
+  });
+  document.getElementById('giftSpendBtn').addEventListener('click', ()=>{
+    const amt = parseFloat(document.getElementById('giftSpendAmt').value);
+    if(!(amt > 0)) { flashSave('type how much you spent', true); return; }
+    const have = giftFund().saved||0;
+    if(have <= 0){ flashSave('the gift fund is empty', true); return; }
+    pushUndoSnapshot();
+    giftMove(-Math.min(amt, have), (document.getElementById('giftSpendName').value||'').trim() || 'Gift');
+  });
+  // the goal updates in place (no redraw), so nothing jumps under your finger while you type
+  const showGoal = ()=>{
+    const gf = data.giftFund || {}, sv = gf.saved||0, tg = gf.target||0;
+    document.getElementById('giftOf').innerHTML = tg > 0 ? `of a ${money(tg)} goal · ${sv >= tg ? '<b>goal reached 🎉</b>' : `${money(round2(tg - sv))} to go`}` : 'set aside for gifts';
+    const bar = document.getElementById('giftBar');
+    bar.style.visibility = tg > 0 ? '' : 'hidden';
+    bar.firstElementChild.style.width = (tg > 0 ? Math.max(0, Math.min(sv/tg, 1))*100 : 0) + '%';
+  };
+  showGoal();
+  const t = document.getElementById('giftTarget');
+  t.addEventListener('input', ()=>{ giftFund().target = parseFloat(t.value)||0; showGoal(); renderPlanning(); renderAccounts(); queueSave(); });
+  document.getElementById('giftWhere').addEventListener('change', e=>{ giftFund().where = e.target.value; render(); queueSave(); });
+}
+
 
 // ---------- Can I justify this purchase? ----------
 // End of this cycle = checking now + paychecks not received yet − every bill not paid yet − cushion.
 // Then compare what's left after the purchase with the Payment Planning split (extra to credit + to savings).
 // The price and name aren't saved anywhere; they're just for checking.
-function computeJustify(price){
-  const {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal} = cycleEnd();
+function computeJustify(price, isGift){
+  const {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal, giftHeld} = cycleEnd();
   const p = computePlanning();
-  const toCredit = p ? p.toCredit : 0;
+  const paused = !!(p && p.paused);
+  // while the plan is paused, its "extra" goes to the Gift Fund instead of a debt
+  const toCredit = p ? (paused ? p.toGift : p.toCredit) : 0;
   const toSavings = p ? p.toSavings : 0;
-  const priority = p && p.credits.length ? p.credits[0] : null;
-  const after = endOfCycle!==null ? round2(endOfCycle - (price||0)) : null;
-  return {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal, toCredit, toSavings, priority, after,
+  const priority = paused ? (toCredit > 0 ? {name: 'the gift fund'} : null) : (p && p.open.length ? p.open[0] : null);
+  // a gift comes out of the Gift Fund first; only the rest touches this cycle's money
+  const fund = Math.max(0, round2((data.giftFund && data.giftFund.saved) || 0));
+  const fromFund = isGift ? Math.min(price||0, fund) : 0;
+  const after = endOfCycle!==null ? round2(endOfCycle - ((price||0) - fromFund)) : null;
+  return {has, balance, comingPays, paysTotal, unpaidBills, billsTotal, cushion, endOfCycle, backs, backTotal, giftHeld, paused, fund, fromFund, toCredit, toSavings, priority, after,
           maxKeepAll: endOfCycle!==null ? round2(endOfCycle - toCredit - toSavings) : null,
           maxKeepPlan: endOfCycle!==null ? round2(endOfCycle - toCredit) : null};
 }
@@ -2758,8 +3064,11 @@ function renderJustify(){
   const price = parseFloat(priceEl.value);
   const hasPrice = !isNaN(price) && price > 0;
   const name = (document.getElementById('jtName').value || '').trim();
-  const what = name ? escapeHtml(name) : 'this purchase';
-  const j = computeJustify(hasPrice ? price : 0);
+  const isGift = document.getElementById('jtGift').checked;
+  const what = name ? escapeHtml(name) : isGift ? 'this gift' : 'this purchase';
+  const j = computeJustify(hasPrice ? price : 0, isGift);
+  document.getElementById('jtGiftHave').textContent = j.fund > 0 ? `(${money(j.fund)} in it)` : '(it\u2019s empty right now)';
+  const planWord = j.paused ? 'gift fund plan' : 'payment plan';
   const verdict = document.getElementById('jtVerdict');
   const math = document.getElementById('jtMath');
   const limits = document.getElementById('jtLimits');
@@ -2780,7 +3089,8 @@ function renderJustify(){
   // the two "most you can spend" limits, always shown
   const lim = (color, label, amt) => `<div class="jt-limit"><span><span class="dot" style="background:${color}"></span>${label}</span><b>${amt > 0 ? money(amt) : '$0.00'}</b></div>`;
   limits.innerHTML = lim('var(--vault)', 'Most you can spend and keep the whole plan', j.maxKeepAll)
-    + (j.priority ? lim('var(--gold)', 'Most you can spend and still do the payment plan (no savings)', j.maxKeepPlan) : '');
+    + (j.priority ? lim('var(--gold)', `Most you can spend and still do the ${planWord} (no savings)`, j.maxKeepPlan) : '')
+    + (isGift && j.fund > 0 ? lim('var(--pink)', 'Plus what\u2019s in the Gift Fund', j.fund) : '');
 
   const payNames = j.comingPays.map(i=>escapeHtml(i.name)).join(', ');
   math.innerHTML = `
@@ -2789,8 +3099,10 @@ function renderJustify(){
     ${j.backTotal ? `<div class="ln"><span>+ coming back from ${escapeHtml(partnerName())}<small>${j.backs.map(r=>escapeHtml(r.name)).join(', ')}</small></span><b>${money(j.backTotal)}</b></div>` : ''}
     <div class="ln">− bills still to pay (${j.unpaidBills.length})<b>${money(j.billsTotal)}</b></div>
     ${j.cushion ? `<div class="ln">− cushion<b>${money(j.cushion)}</b></div>` : ''}
+    ${j.giftHeld ? `<div class="ln">− gift fund (kept in checking)<b>${money(j.giftHeld)}</b></div>` : ''}
     <div class="ln total">Left once it's all in and paid<b>${money(j.endOfCycle)}</b></div>
     ${hasPrice ? `<div class="ln">− ${what}<b>${money(price)}</b></div>
+    ${j.fromFund ? `<div class="ln">+ paid from the gift fund<b>${money(j.fromFund)}</b></div>` : ''}
     <div class="ln total">Left after buying ${what}<b class="${j.after<0?'neg':''}" style="${j.after<0?'color:var(--red)':''}">${money(j.after)}</b></div>` : ''}
     <div class="ln plan" style="margin-top:6px"><span>Payment Planning wants<small>${planLabel}</small></span><b>${money(round2(j.toCredit + j.toSavings))}</b></div>`;
 
@@ -2801,18 +3113,25 @@ function renderJustify(){
   }
   const a = j.after, plan = round2(j.toCredit + j.toSavings);
   let cls, title, text;
+  const spentBtn = j.fromFund ? `<br><button type="button" class="reco-btn pink" id="jtSpent">🎁 Bought it: take ${money(j.fromFund)} out of the gift fund</button>` : '';
+  if(isGift && j.fromFund >= price){
+    verdict.className = 'verdict go';
+    verdict.innerHTML = `<div class="v-title">Yes, the Gift Fund covers it</div><div class="v-text">${money(round2(j.fund - price))} would be left in the fund after ${what}. Nothing else in your plan changes.${spentBtn}</div>`;
+    wireSpent();
+    return;
+  }
   if(a >= plan){
     cls = 'go'; title = 'Yes, go for it';
     text = `After ${what} you'd still have ${money(a)}, enough for the whole plan (${planLabel})${a - plan >= 0.01 ? ` with ${money(round2(a - plan))} to spare` : ''}.`;
   } else if(j.priority && a >= j.toCredit){
     const sav = round2(a - j.toCredit);
     cls = 'nosave';
-    title = sav >= 0.01 ? 'Yes, the payment plan still works' : 'Yes, but no savings this time';
+    title = sav >= 0.01 ? `Yes, the ${planWord} still works` : 'Yes, but no savings this time';
     text = `You can still pay the ${money(j.toCredit)} extra to ${creditName}. ${sav >= 0.01 ? `Savings would get ${money(sav)} instead of ${money(j.toSavings)}.` : 'Nothing would be left for savings.'}`;
   } else if(a >= 0){
     cls = 'cut';
     if(j.priority){
-      title = 'Only if you cut the payment plan';
+      title = `Only if you cut the ${planWord}`;
       text = `After ${what} you'd have ${money(a)}: not enough for the ${money(j.toCredit)} extra to ${creditName}, and nothing for savings.`;
     } else {
       title = 'Yes, but it eats your savings';
@@ -2822,8 +3141,14 @@ function renderJustify(){
     cls = 'no'; title = "Can't justify it right now";
     text = `You'd be ${money(-a)} short once every bill is paid, before any savings or extra credit payment.`;
   }
+  if(j.fromFund) text = `The Gift Fund covers ${money(j.fromFund)}; the other ${money(round2(price - j.fromFund))} comes out of this cycle. ` + text;
   verdict.className = 'verdict ' + cls;
-  verdict.innerHTML = `<div class="v-title">${title}</div><div class="v-text">${text}</div>`;
+  verdict.innerHTML = `<div class="v-title">${title}</div><div class="v-text">${text}${cls !== 'no' ? spentBtn : ''}</div>`;
+  wireSpent();
+  function wireSpent(){
+    const b = document.getElementById('jtSpent');
+    if(b) b.onclick = ()=>{ pushUndoSnapshot(); giftMove(-j.fromFund, name || 'Gift'); };
+  }
 
   // the "skip savings, just do the payment plan" option, always spelled out when there's a payment plan
   if(j.priority && j.toCredit > 0){
@@ -2831,15 +3156,16 @@ function renderJustify(){
     alt.style.display = '';
     if(leftAfterPlan >= 0){
       alt.className = 'v-alt ok';
-      alt.innerHTML = `<span class="ic">✓</span><span><b>If you skip savings and just do the payment plan:</b> it works. After ${what} and the ${money(j.toCredit)} extra to ${creditName}, you'd have ${money(leftAfterPlan)} left${j.toSavings > 0 ? ` (instead of sending ${money(j.toSavings)} to savings)` : ''}.</span>`;
+      alt.innerHTML = `<span class="ic">✓</span><span><b>If you skip savings and just do the ${planWord}:</b> it works. After ${what} and the ${money(j.toCredit)} extra to ${creditName}, you'd have ${money(leftAfterPlan)} left${j.toSavings > 0 ? ` (instead of sending ${money(j.toSavings)} to savings)` : ''}.</span>`;
     } else {
       alt.className = 'v-alt bad';
-      alt.innerHTML = `<span class="ic">✕</span><span><b>If you skip savings and just do the payment plan:</b> still ${money(-leftAfterPlan)} short. You'd have ${money(Math.max(a,0))} for the ${money(j.toCredit)} extra to ${creditName}.${j.maxKeepPlan > 0 ? ` Spend ${money(j.maxKeepPlan)} or less to make it work.` : ''}</span>`;
+      alt.innerHTML = `<span class="ic">✕</span><span><b>If you skip savings and just do the ${planWord}:</b> still ${money(-leftAfterPlan)} short. You'd have ${money(Math.max(a,0))} for the ${money(j.toCredit)} extra to ${creditName}.${j.maxKeepPlan > 0 ? ` Spend ${money(j.maxKeepPlan)} or less to make it work.` : ''}</span>`;
     }
   }
 }
 document.getElementById('jtPrice').addEventListener('input', renderJustify);
 document.getElementById('jtName').addEventListener('input', renderJustify);
+document.getElementById('jtGift').addEventListener('change', renderJustify);
 
 // ================= Dual income: partner link, side by side, combined =================
 // Each person keeps their own ledger (vault_ledgers row). Linked partners can read each other's (vault-share.sql).
@@ -2981,7 +3307,7 @@ function personSummary(d){
     const p = computePlanning();
     let debtFree = null, payoff = [];
     if(p && p.credits.length){
-      payoff = simulatePayoff(p.credits, p.toCredit, new Date(p.next.date+'T00:00:00'));
+      payoff = simulatePayoff(p.credits, p.simExtra, new Date(p.next.date+'T00:00:00'), p.simFrom);
       if(payoff.length === p.credits.length) debtFree = payoff[payoff.length-1].date;
     }
     const incs = incomeRows();
@@ -3008,7 +3334,7 @@ function personHtml(S, who, name, color, isMe){
       <summary><div><div class="gt">${escapeHtml(g.inc.name)} · ${shortDate(g.inc.date)}</div>
         <div class="gs">${g.inc.paid ? 'received · ' : ''}${g.unpaid.length} to pay${g.all.length>g.unpaid.length ? ` · ${g.all.length-g.unpaid.length} paid` : ''} · predicted <b class="${cls(g.predicted)}">${money(g.predicted)}</b>${g.actual!==null ? ` · actual <b class="${cls(g.actual)}">${money(g.actual)}</b>` : ''}</div></div>
         <div class="gtot">${money(g.total)}</div></summary>
-      <div class="gb">${g.all.length ? g.all.map(r=>`<div class="p-bill${r.paid?' paid':''}"><span class="nm">${escapeHtml(r.name)}${r.split ? ' <span class="tag-held share">split</span>' : ''}${r.mirror ? ' <span class="tag-held share">transfer</span>' : ''}${r.payoff ? ' <span class="tag-held payoff">payoff</span>' : ''}</span><span class="dt">${shortDate(r.dueDate)}</span><span class="am">${money(r.amount)}</span></div>`).join('') : '<div class="cb-note">No bills on this paycheck.</div>'}</div>
+      <div class="gb">${g.all.length ? g.all.map(r=>`<div class="p-bill${r.paid?' paid':''}"><span class="nm">${escapeHtml(r.name)}${r.split ? ' <span class="tag-held share">split</span>' : ''}${r.mirror ? ' <span class="tag-held share">transfer</span>' : ''}${r.payoff ? ' <span class="tag-held payoff">payoff</span>' : ''}${r.hold ? ' <span class="tag-held hold">on hold</span>' : ''}</span><span class="dt">${shortDate(r.dueDate)}</span><span class="am">${money(r.amount)}</span></div>`).join('') : '<div class="cb-note">No bills on this paycheck.</div>'}</div>
     </details>`).join('') || '<div class="cb-note">No paychecks on the schedule yet.</div>';
   const next = c.next ? `Next payday: <b>${escapeHtml(c.next.name)}</b> on ${shortDate(c.next.date)} (${c.days===1 ? 'tomorrow' : `in ${c.days} days`}) · ${money(c.next.amount)}` : 'No payday left on the schedule.';
   const upd = isMe ? '' : (partner && partner.loadedAt ? `checked ${Math.max(0, Math.round((Date.now()-partner.loadedAt)/60000))} min ago` : '');
