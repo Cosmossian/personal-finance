@@ -409,6 +409,12 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .dg-foot b.good{color:var(--vault);} .dg-foot b.bad{color:var(--red);}
 .ck-empty{font-size:13px;color:var(--muted);padding:6px 2px;}
 .ck-hint{font-size:12px;color:var(--muted);margin-top:8px;}
+.ck-hint b{color:var(--ink);}
+.pbd-preview{float:right;display:inline-flex;align-items:center;gap:6px;font-family:var(--body);font-size:12px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--muted);cursor:pointer;}
+.pbd-preview input{accent-color:var(--plum);width:15px;height:15px;}
+.pbd-on{float:right;font-family:var(--body);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#17201A;background:var(--plum);border-radius:999px;padding:1px 8px;}
+.pc-auto{display:inline-block;padding:3px 6px;font-size:12.5px;white-space:nowrap;}
+.pc-auto small{display:block;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
 
 /* ---------- savings goals ---------- */
 .goals-summary{font-size:13px;color:var(--muted);margin:0 0 14px;}
@@ -732,7 +738,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
     <div class="ck-due">
       <div class="ck-due-head" id="ckDueHead"></div>
       <div id="ckDueList"></div>
-      <div class="ck-hint">Each bill shows under the Paycheck you picked for it in the Payment Schedule. Paid one? Tick it in the Payment Schedule and update your balance above.</div>
+      <div class="ck-hint" id="ckHint">Each bill shows under the Paycheck you picked for it in the Payment Schedule. Paid one? Tick it in the Payment Schedule and update your balance above.</div>
     </div>
   </div>
 
@@ -801,7 +807,7 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
       </div>
       <button class="addbtn" id="balanceBtn">Balance evenly</button>
     </div>
-    <div class="panel-sub">What's left from each paycheck once its assigned bills come out. "Balance evenly" reassigns bills across paychecks so each leftover is as close as possible.</div>
+    <div class="panel-sub" id="balanceSub">What's left from each paycheck once its assigned bills come out. "Balance evenly" reassigns bills across paychecks so each leftover is as close as possible.</div>
     <div id="balanceBody"></div>
   </div>
 
@@ -1359,6 +1365,7 @@ function applyMobileLabels(tbodyId){
 }
 
 function render(){
+  applyPayByDue();
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
   renderExp();
   syncMonthlyBillsToExpTotal(computeExpTotal());
@@ -1384,6 +1391,7 @@ function groupCounts(){
 }
 
 function renderPay(){
+  applyPayByDue();
   const body = document.getElementById('payBody');
   body.innerHTML = '';
   const incomes = incomeRows();
@@ -1403,7 +1411,10 @@ function renderPay(){
     if(isBill){
       const opts = incomes.map(inc=>`<option value="${inc.id}" ${row.paycheckId===inc.id?'selected':''}>${escapeHtml(inc.name)} · ${shortDate(inc.date)}</option>`).join('');
       const dotColor = paycheckColor(row.paycheckId, incomes);
-      paycheckCell = `<div class="paycheck-border" style="border-color:${dotColor}"><select data-f="paycheckId">${opts || '<option value="">no paychecks yet</option>'}</select></div>`;
+      const autoInc = payByDueOn() && !isSplitPart(row) ? incomes.find(inc=>inc.id===row.paycheckId) : null;
+      paycheckCell = autoInc
+        ? `<div class="paycheck-border" style="border-color:${dotColor}" title="picked automatically: the last payday on or before the Pay By date"><span class="pc-auto">${escapeHtml(autoInc.name)} · ${shortDate(autoInc.date)}<small>by due date</small></span></div>`
+        : `<div class="paycheck-border" style="border-color:${dotColor}"><select data-f="paycheckId">${opts || '<option value="">no paychecks yet</option>'}</select></div>`;
       methodCell = `<select data-f="method" class="method-${row.method}">
           <option value="direct" ${row.method==='direct'?'selected':''}>pay directly</option>
           <option value="savings" ${row.method==='savings'?'selected':''}>into savings</option>
@@ -1830,6 +1841,14 @@ function renderSav(){
 }
 
 function renderBalance(){
+  applyPayByDue();
+  // bills go by due date now, so there's nothing to even out (split parts still keep their own paycheck)
+  const bb = document.getElementById('balanceBtn');
+  if(bb) bb.style.display = payByDueOn() ? 'none' : '';
+  const bs = document.getElementById('balanceSub');
+  if(bs) bs.textContent = payByDueOn()
+    ? "What's left from each paycheck once its bills come out. Bills go to the last payday on or before their due date."
+    : "What's left from each paycheck once its assigned bills come out. \"Balance evenly\" reassigns bills across paychecks so each leftover is as close as possible.";
   const el = document.getElementById('balanceBody');
   const incomes = incomeRows();
   if(incomes.length===0){ el.innerHTML = '<div class="dim">add a paycheck above to see the split</div>'; return; }
@@ -2429,7 +2448,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 function balanceEvenly(){
   const incomes = incomeRows();
-  if(incomes.length===0) return;
+  if(incomes.length===0 || payByDueOn()) return;
   pushUndoSnapshot();
   const bills = data.pay.filter(r=>r.type==='bill').slice().sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
   const running = {};
@@ -2571,13 +2590,17 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
     else if(row.mirror){ /* your share of your partner's bill moves when they advance their month */ }
     else { row.dueDate = addMonths(row.dueDate, 1); row.paid = false; if(row.split) row.split.received = false; }
   });
+  // bills by due date switch on at the first Advance a month after Nov 12, 2026 (Undo turns it back off)
+  const byDueNow = !data.payByDue;
+  if(byDueNow){ data.payByDue = true; payByDuePreview = false; }
+  applyPayByDue();
   // a debt on hold whose bill is now in its hold month: pay it all off this cycle
   const released = releaseHolds();
 
   render();
   queueSave();
   const n = Object.keys(debtGroups).length;
-  if(n || released.length) flashSave(`advanced a month · ${money(round2(tookOff))} off ${n} debt balance${n===1?'':'s'}${paidOff.length ? ' · paid off: ' + paidOff.join(', ') + ' 🎉 (taken off your bills)' : ''}${released.length ? ' · ' + released.join(' · ') : ''}`, false, released.length ? 7000 : 4500);
+  if(n || released.length || byDueNow) flashSave(`advanced a month${n ? ` · ${money(round2(tookOff))} off ${n} debt balance${n===1?'':'s'}` : ''}${paidOff.length ? ' · paid off: ' + paidOff.join(', ') + ' 🎉 (taken off your bills)' : ''}${released.length ? ' · ' + released.join(' · ') : ''}${byDueNow ? ' · bills now go under the payday before they\'re due' : ''}`, false, (released.length || byDueNow) ? 7000 : 4500);
 });
 
 // ================= Checking, Savings Goals, account cards =================
@@ -2605,7 +2628,43 @@ function dueGroupHtml(key, color, title, sub, total, peek, bodyHtml){
   </div>`;
 }
 
+// ---- Bills by due date (data.payByDue, Nov 2026) ----
+// Dylan: each payday should cover what's due around/before it, not whatever was picked in the dropdown.
+// When on, every bill goes to the latest paycheck dated on or before its due date (paycheckFor).
+//  - Due before Payday 1: paid with money held over from last month → the "Held over from <month>" section.
+//    Once its due date has passed (and it's not ticked Paid), this month's is done and the NEXT one is
+//    set aside by the paycheck before that next due date (usually the last payday of the month).
+//  - Split parts (one bill split across paychecks) keep the paycheck picked for them.
+// It switches on at the next Advance a month (Undo switches it back off); until then the Bills by paycheck
+// section has a device-only "preview" toggle that changes nothing saved.
+let payByDuePreview = false;
+const payByDueOn = () => !!(data && data.payByDue);
+const byDueView = () => payByDueOn() || payByDuePreview;
+function isSplitPart(r){ return !!(r.groupId && data.pay.filter(x=>x.type==='bill' && x.groupId===r.groupId).length > 1); }
+function autoPaycheck(r){
+  const inc = incomeRows();
+  if(!inc.length || r.type!=='bill') return r.paycheckId || '';
+  if(isSplitPart(r) && inc.some(i=>i.id===r.paycheckId)) return r.paycheckId;
+  const p1 = inc[0].date;
+  let d = r.dueDate || p1;
+  if(!r.paid && d < p1 && d < localToday()){ let n = 0; while(d < p1 && n++ < 24) d = addMonths(d, 1); }
+  return paycheckFor(d);
+}
+const pcOf = r => byDueView() ? autoPaycheck(r) : r.paycheckId;
+function applyPayByDue(){
+  if(!payByDueOn()) return 0;
+  let n = 0;
+  data.pay.forEach(r=>{
+    if(r.type!=='bill') return;
+    const p = autoPaycheck(r);
+    if(p && r.paycheckId !== p){ r.paycheckId = p; n++; }
+  });
+  return n;
+}
+const monthBefore = iso => new Date(addMonths(iso, -1)+'T00:00:00').toLocaleDateString(undefined, {month:'long'});
+
 function computeChecking(){
+  applyPayByDue();
   const ck = data.checking || {};
   const today = localToday();
   // next payday = the first paycheck still to come that isn't ticked Paid (received) yet
@@ -2625,14 +2684,14 @@ function computeChecking(){
   const payDateOf = id => (incs.find(i=>i.id===id) || {}).date || null;
   const catOf = r => r.method==='savings' ? 'savings' : 'checking';
   const unpaidBills = data.pay.filter(r=>r.type==='bill' && !r.paid);
-  const onFirst = r => !first || r.paycheckId===first.id || !incIds.has(r.paycheckId);
-  const held = unpaidBills.filter(r=>{ const pd = payDateOf(r.paycheckId); return pd && (r.dueDate||'') < pd; });
+  const onFirst = r => !first || pcOf(r)===first.id || !incIds.has(pcOf(r));
+  const held = unpaidBills.filter(r=>{ const pd = payDateOf(pcOf(r)); return pd && (r.dueDate||'') < pd; });
   const heldIds = new Set(held.map(r=>r.id));
   const heldNowIds = new Set(held.filter(r=>(r.dueDate||'') >= today).map(r=>r.id));
-  const nextDueOf = r => { const pd = payDateOf(r.paycheckId); let d = r.dueDate || pd; let n = 0; while(pd && d < pd && n++ < 24) d = addMonths(d, 1); return d; };
+  const nextDueOf = r => { const pd = payDateOf(pcOf(r)); let d = r.dueDate || pd; let n = 0; while(pd && d < pd && n++ < 24) d = addMonths(d, 1); return d; };
   const nextDue = {}; held.forEach(r=>{ nextDue[r.id] = heldNowIds.has(r.id) ? r.dueDate : nextDueOf(r); });
   const receivedIds = new Set(incs.filter(i=>i.paid).map(i=>i.id));
-  const holdingNow = held.filter(r=>heldNowIds.has(r.id) || receivedIds.has(r.paycheckId));  // money actually sitting somewhere now
+  const holdingNow = held.filter(r=>heldNowIds.has(r.id) || receivedIds.has(pcOf(r)));  // money actually sitting somewhere now
   const sumOf = list => round2(list.reduce((s,r)=>s+r.amount,0));
   const heldFromChecking = sumOf(holdingNow.filter(r=>catOf(r)==='checking'));
   const heldInSavings = sumOf(holdingNow.filter(r=>catOf(r)==='savings'));
@@ -2647,7 +2706,10 @@ function computeChecking(){
   const safe = has ? round2(ck.balance - dueTotal - cushion - giftHeld) : null;
   const days = next ? daysBetween(today, next.date) : null;
   const firstBillsTotal = round2(dueTotal - heldFromChecking);
-  return {has, balance:ck.balance, cushion, giftHeld, next, first, due, dueTotal, firstBillsTotal, held, heldIds, heldNowIds, heldTotal, heldFromChecking, heldInSavings, catOf, nextDue, incs, receivedIds, safe, days, today};
+  // bills due before Payday 1 (paid with last month's money) get their own section when bills go by due date
+  const holdOver = (byDueView() && first) ? data.pay.filter(r=>r.type==='bill' && pcOf(r)===first.id && (r.dueDate||'') < first.date) : [];
+  const holdOverIds = new Set(holdOver.map(r=>r.id));
+  return {holdOver, holdOverIds, has, balance:ck.balance, cushion, giftHeld, next, first, due, dueTotal, firstBillsTotal, held, heldIds, heldNowIds, heldTotal, heldFromChecking, heldInSavings, catOf, nextDue, incs, receivedIds, safe, days, today};
 }
 
 function renderChecking(){
@@ -2705,7 +2767,7 @@ function renderChecking(){
     if(now.length) html += `<div>Held over right now:</div>${bucket('Keep in checking','k',nowCk)}${bucket('Keep in savings','s',nowSv)}`;
     // next month's set-asides, one line per paycheck
     c.incs.forEach(inc=>{
-      const hs = c.held.filter(r=>r.paycheckId===inc.id && !c.heldNowIds.has(r.id));
+      const hs = c.held.filter(r=>pcOf(r)===inc.id && !c.heldNowIds.has(r.id));
       if(!hs.length) return;
       const ck = hs.filter(r=>c.catOf(r)==='checking'), sv = hs.filter(r=>c.catOf(r)==='savings');
       const dates = hs.map(r=>c.nextDue[r.id]).sort();
@@ -2745,11 +2807,26 @@ function renderChecking(){
   // The Before section has no payday, so it only shows the actual figure.
   const groups = [];
   const cls = n => n<0 ? 'bad' : 'good';
+  // Held over from last month (bills by due date): due before Payday 1, so last month's money pays them, not Payday 1's
+  if(c.holdOver.length){
+    const ho = c.holdOver.slice().sort((a,b)=>(a.paid===b.paid ? 0 : a.paid ? 1 : -1) || (a.dueDate||'').localeCompare(b.dueDate||''));
+    const hoUnpaid = ho.filter(r=>!r.paid);
+    const sumOf = list => round2(list.reduce((s,r)=>s+r.amount,0));
+    const hoCk = sumOf(hoUnpaid.filter(r=>c.catOf(r)==='checking')), hoSv = sumOf(hoUnpaid.filter(r=>c.catOf(r)==='savings'));
+    const where = [hoCk ? `keep <b>${money(hoCk)}</b> in checking` : '', hoSv ? `<b>${money(hoSv)}</b> in savings` : ''].filter(Boolean).join(' · ') || 'all paid';
+    const mo = monthBefore(allIncomes[0].date);
+    groups.push(dueGroupHtml('holdover', 'var(--plum)',
+      `Held over from ${escapeHtml(mo)}`,
+      `due before ${escapeHtml(allIncomes[0].name)} · ${hoUnpaid.length} to pay${ho.length > hoUnpaid.length ? ` · ${ho.length - hoUnpaid.length} paid` : ''}`,
+      sumOf(hoUnpaid), where,
+      itemsHtml(ho)
+        + `<div class="dg-foot"><span>Paid with money set aside in ${escapeHtml(mo)}<small>these don't come out of ${escapeHtml(allIncomes[0].name)}. Where it's kept follows each bill's Pay from.</small></span><b>${money(sumOf(hoUnpaid))}</b></div>`));
+  }
   allIncomes.forEach((inc,i)=>{
     // every bill on this paycheck, paid or not: paid ones still came out of this paycheck
     const incIds = new Set(allIncomes.map(x=>x.id));
     const allBills = data.pay
-      .filter(r=>r.type==='bill' && (r.paycheckId===inc.id || (i===0 && !incIds.has(r.paycheckId))))
+      .filter(r=>r.type==='bill' && !c.holdOverIds.has(r.id) && (pcOf(r)===inc.id || (i===0 && !incIds.has(pcOf(r)))))
       .sort((a,b)=>(a.paid===b.paid ? 0 : a.paid ? 1 : -1) || (a.dueDate||'').localeCompare(b.dueDate||''));
     const bills = allBills.filter(r=>!r.paid);
     const total = round2(bills.reduce((s,r)=>s+r.amount,0));                // still to pay
@@ -2771,7 +2848,16 @@ function renderChecking(){
         + `<div class="dg-foot"><span>Actual left over<small>${c.has ? `${money(c.balance)} in checking − ${money(fromChecking)} still to pay${heldSavTotal ? ` (${money(heldSavTotal)} held in savings not counted)` : ''}` : 'add your checking balance above'}</small></span><b class="${actual!==null ? cls(actual) : ''}">${actual!==null ? money(actual) : '—'}</b></div>`));
   });
   if(!allIncomes.length) groups.push(dueGroupHtml('none', 'var(--teal)', 'Unpaid bills', 'add a paycheck to the Payment Schedule to split these up', c.dueTotal, '', itemsHtml(unpaid)));
-  document.getElementById('ckDueHead').textContent = 'Bills by paycheck';
+  const head = document.getElementById('ckDueHead');
+  head.innerHTML = `Bills by paycheck${payByDueOn() ? '<span class="pbd-on">by due date</span>'
+    : `<label class="pbd-preview" title="see how it'll look once bills go by due date. Nothing is saved; it switches on for real at your next Advance a month."><input type="checkbox" id="pbdPreview" ${payByDuePreview?'checked':''}> preview by due date</label>`}`;
+  const pv = document.getElementById('pbdPreview');
+  if(pv) pv.onchange = ()=>{ payByDuePreview = pv.checked; renderChecking(); };
+  document.getElementById('ckHint').innerHTML = payByDueOn()
+    ? 'Each bill shows under the last payday on or before its due date. Paid one? Tick it in the Payment Schedule and update your balance above.'
+    : payByDuePreview
+    ? '<b>Preview:</b> each bill under the last payday on or before its due date. This turns on for real at your next <b>Advance a month</b>; nothing is changed until then.'
+    : 'Each bill shows under the Paycheck you picked for it in the Payment Schedule. Paid one? Tick it in the Payment Schedule and update your balance above. From your next Advance a month, bills go by their due date instead.';
   const list = document.getElementById('ckDueList');
   list.innerHTML = `<div class="due-groups">${groups.join('')}</div>`;
   list.querySelectorAll('[data-ckgroup]').forEach(h=>{
