@@ -369,6 +369,14 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 .tag-held.hold{background:var(--pink);}
 .hold-tag{color:var(--pink) !important;font-weight:700;}
 .hold-tag .linkbtn{margin-left:4px;}
+.tag-held.skip{background:var(--line);color:var(--ink);}
+.skip-tag{color:var(--muted) !important;font-weight:700;}
+.skip-tag .linkbtn{margin-left:4px;}
+.skipbtn{display:block;margin:4px auto 0;background:none;border:1.5px solid var(--line);border-radius:8px;color:var(--muted);font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;cursor:pointer;}
+.skipbtn:hover{border-color:var(--gold);color:var(--gold);}
+.skipbtn.on{background:var(--gold);border-color:#000;color:#17201A;}
+tr.bill-row.skipped td{color:var(--muted);}
+tr.bill-row.skipped .name-input{text-decoration:line-through;text-decoration-color:var(--muted);}
 .reco-btn.pink{background:var(--pink);}
 .amt-wrap input:disabled{opacity:.55;cursor:not-allowed;}
 .jt-gift{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;cursor:pointer;}
@@ -1423,7 +1431,7 @@ function renderPay(){
     tr.dataset.rowid = row.id;
     const isBill = row.type==='bill';
     const inGroup = isBill && row.groupId && counts[row.groupId] > 1;
-    tr.className = (isBill ? ('bill-row' + (row.paid?' paid':'')) : '') + (inGroup ? ' split-row' : '');
+    tr.className = (isBill ? ('bill-row' + (row.paid?' paid':'') + (row.skip?' skipped':'')) : '') + (inGroup ? ' split-row' : '');
     if(!isBill) tr.style.borderLeft = `3px solid ${paycheckColor(row.id, incomes)}`;
 
     let paycheckCell, methodCell, nameCell, payDateCell, payByCell;
@@ -1461,6 +1469,9 @@ function renderPay(){
       }
       if(row.hold){
         tag += `<span class="split-tag hold-tag">⏸️ on hold until ${ymLabel(row.hold.until)} · normally ${money(row.hold.min||0)} · <button type="button" class="linkbtn ghost" data-hold-cancel="${escapeHtml(row.groupId||row.id)}">end hold</button></span>`;
+      }
+      if(row.skip){
+        tag += `<span class="split-tag skip-tag">⏭️ skipped this month · normally ${money(row.skip.amount||0)} · <button type="button" class="linkbtn ghost" data-unskip="1">undo skip</button></span>`;
       }
       let paylinkArea;
       if(editingLinkIds.has(row.id)){
@@ -1502,6 +1513,8 @@ function renderPay(){
 
     const amountCell = isMonthlyBillsRow
       ? `<div class="amt-wrap"><span class="synced-amount" title="synced automatically from Monthly Expenditures">${row.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>`
+      : row.skip
+      ? `<div class="amt-wrap"><input type="number" step="0.01" value="${row.amount.toFixed(2)}" disabled title="skipped this month (normally ${money(row.skip.amount||0)}); undo the skip to change it"></div>`
       : row.hold
       ? `<div class="amt-wrap"><input type="number" step="0.01" value="${row.amount.toFixed(2)}" disabled title="on hold until ${ymLabel(row.hold.until)}; end the hold to change it"></div>`
       : `<div class="amt-wrap"><input type="number" step="0.01" value="${row.amount.toFixed(2)}" data-f="amount"></div>`;
@@ -1519,10 +1532,14 @@ function renderPay(){
       <td class="num">${amountCell}</td>
       <td>${paycheckCell}</td>
       <td>${methodCell}</td>
-      <td style="text-align:center"><input type="checkbox" class="chk" ${row.paid?'checked':''} data-f="paid"></td>
+      <td style="text-align:center">${row.skip ? '' : `<input type="checkbox" class="chk" ${row.paid?'checked':''} data-f="paid">`}${isBill && (row.skip || (canSkip(row) && !row.paid)) ? `<button type="button" class="skipbtn${row.skip?' on':''}" data-skip="1" title="${row.skip ? 'skipped this month: tap to pay it after all' : 'not paying this one this month (optional bill): leave it out of this month'}">${row.skip ? 'skipped' : 'skip'}</button>` : ''}</td>
       <td style="text-align:center">${isBill ? `<input type="checkbox" class="chk" ${row.isCredit?'checked':''} data-f="isCredit">` : '<span class="dim">—</span>'}</td>
       <td>${isBill ? '<button class="split" data-sp="1" title="split this bill across another paycheck">split</button>' : ''}<button class="rmv" data-rm="1">×</button></td>
     `;
+    const skB = tr.querySelector('[data-skip]');
+    if(skB) skB.addEventListener('click', ()=> setSkip(row, !row.skip));
+    const unB = tr.querySelector('[data-unskip]');
+    if(unB) unB.addEventListener('click', ()=> setSkip(row, false));
     // split with partner controls
     const shareDone = ()=>{ renderPay(); renderHero(); renderBalance(); renderPlanning(); queueSave(); };
     const sOn = tr.querySelector('[data-share-on]');
@@ -1539,7 +1556,7 @@ function renderPay(){
       const field = el.dataset.f;
       const ev = (el.tagName==='SELECT' || field==='paid' || field==='isCredit') ? 'change' : 'input';
       el.addEventListener(ev, ()=>{
-        if(field==='paid'){ row.paid = el.checked; tr.classList.toggle('paid', row.paid); }
+        if(field==='paid'){ row.paid = el.checked; tr.classList.toggle('paid', row.paid); setTimeout(renderPay, 0); }
         else if(field==='isCredit'){ row.isCredit = el.checked; }
         else if(field==='amount'){
           const siblings = row.groupId ? data.pay.filter(r=>r.type==='bill' && r.groupId===row.groupId) : [];
@@ -1937,6 +1954,7 @@ function startPayoff(key){
   const rows = payoffRows(key);
   if(!rows.length || rows.some(r=>r.payoff)) return;
   pushUndoSnapshot();
+  unskipQuiet(rows);
   const t = rows[rows.length-1];
   t.payoff = {min: t.amount||0};
   syncPayoff(key);
@@ -1966,10 +1984,27 @@ function rowMonth(r){
   const pc = r.paycheckId ? incomeRows().find(i=>i.id===r.paycheckId) : null;
   return ymOf((pc && pc.date) || r.dueDate);
 }
+// ---- Skip this month (optional bills, e.g. a Robinhood deposit) ----
+// row.skip = {amount}: the normal amount is kept there and the row pays $0 this month, so every total
+// (still to pay, walking-around money, Bills by paycheck, Advance a month's balance step) leaves it out.
+// Advance a month saves it as "skipped" in Look at last month, then brings the amount back.
+// A split bill (same groupId) skips all its parts together.
+function skipRows(row){ return row.groupId ? data.pay.filter(r=>r.type==='bill' && r.groupId===row.groupId) : [row]; }
+function canSkip(row){ return row.type==='bill' && !row.hold && !row.payoff && !(row.name||'').trim().toLowerCase().includes('monthly bills'); }
+function setSkip(row, on){
+  pushUndoSnapshot();
+  skipRows(row).forEach(r=>{
+    if(on && !r.skip){ r.skip = {amount: r.amount||0}; r.amount = 0; r.paid = false; }
+    else if(!on && r.skip){ r.amount = r.skip.amount||0; delete r.skip; }
+  });
+  render(); queueSave();
+}
+function unskipQuiet(rows){ rows.forEach(r=>{ if(r.skip){ r.amount = r.skip.amount||0; delete r.skip; } }); }
 function startHold(key, until){
   const rows = payoffRows(key);
   if(!rows.length || !until) return;
   pushUndoSnapshot();
+  unskipQuiet(rows);
   const t = rows.find(r=>r.payoff);
   if(t){ t.amount = t.payoff.min||0; delete t.payoff; }
   rows.forEach(r=>{
@@ -2610,6 +2645,7 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
     if(row.type==='income'){ row.date = addMonths(row.date, 1); }
     else if(row.mirror){ /* your share of your partner's bill moves when they advance their month */ }
     else { row.dueDate = addMonths(row.dueDate, 1); row.paid = false; if(row.split) row.split.received = false; }
+    if(row.skip){ row.amount = row.skip.amount||0; delete row.skip; }   // skipped bills come back next month
   });
   // bills by due date switch on at the first Advance a month after Nov 12, 2026 (Undo turns it back off)
   const byDueNow = !data.payByDue;
@@ -2637,7 +2673,7 @@ function saveMonthHistory(){
   const pcs = {}; inc.forEach(i=>{ pcs[i.id] = i.name; });
   const rows = data.pay.map(r => r.type==='income'
     ? {type:'income', name:r.name, date:r.date, amount:r.amount||0, paid:!!r.paid}
-    : {type:'bill', name:r.name, dueDate:r.dueDate, amount:r.amount||0, paid:!!r.paid, paycheck: pcs[r.paycheckId] || '',
+    : {type:'bill', name:r.name, dueDate:r.dueDate, amount: r.skip ? (r.skip.amount||0) : (r.amount||0), paid:!!r.paid, skipped:!!r.skip, paycheck: pcs[r.paycheckId] || '',
        isCredit:!!r.isCredit, held:!!r.hold, payoff:!!r.payoff, mirror:!!r.mirror});
   data.history = Array.isArray(data.history) ? data.history : [];
   data.history.unshift({month: label, at: todayISO(), rows});
@@ -2663,21 +2699,23 @@ function renderLastMonth(){
   const h = hist[lastMonthIdx];
   const bills = h.rows.map((r,i)=>({...r, i})).filter(r=>r.type==='bill').sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
   const pays = h.rows.map((r,i)=>({...r, i})).filter(r=>r.type==='income').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const needs = bills.filter(r=>!r.held && (r.amount||0) > 0);
+  const needs = bills.filter(r=>!r.held && !r.skipped && (r.amount||0) > 0);
+  const skipped = bills.filter(r=>r.skipped);
   const unpaid = needs.filter(r=>!r.paid);
   const sum = unpaid.length
     ? `<p class="lm-sum">${escapeHtml(h.month)}: <b>${needs.length - unpaid.length} of ${needs.length}</b> bills ticked Paid. <span style="color:var(--red);font-weight:700">Not ticked: ${unpaid.map(r=>escapeHtml(r.name)).join(', ')}</span> (${money(round2(unpaid.reduce((s,r)=>s+(r.amount||0),0)))}).</p>`
     : `<p class="lm-sum">${escapeHtml(h.month)}: <b>all ${needs.length}</b> bills ticked Paid ✓</p>`;
-  const tag = r => [r.paycheck, r.isCredit ? 'credit' : '', r.held ? 'on hold' : '', r.payoff ? 'payoff' : '', r.mirror ? 'share' : ''].filter(Boolean).join(' · ');
-  const billRow = r => `<div class="lm-row ${r.paid ? 'done' : (r.held || !(r.amount>0) ? '' : 'unpaid')}">
-      <button class="lm-tick" data-lm="${r.i}" type="button" title="${r.paid ? 'ticked Paid (tap to untick in this record)' : 'not ticked (tap to tick in this record)'}">${r.paid ? '✓' : ''}</button>
+  const skipLine = skipped.length ? `<p class="lm-note" style="margin:-6px 0 10px">Skipped on purpose: ${skipped.map(r=>escapeHtml(r.name)).join(', ')}.</p>` : '';
+  const tag = r => [r.skipped ? 'skipped' : '', r.paycheck, r.isCredit ? 'credit' : '', r.held ? 'on hold' : '', r.payoff ? 'payoff' : '', r.mirror ? 'share' : ''].filter(Boolean).join(' · ');
+  const billRow = r => `<div class="lm-row ${r.paid ? 'done' : (r.held || r.skipped || !(r.amount>0) ? '' : 'unpaid')}">
+      ${r.skipped ? '<span class="lm-tick" style="display:grid;place-items:center;cursor:default;font-size:13px" title="skipped this month">⏭️</span>' : `<button class="lm-tick" data-lm="${r.i}" type="button" title="${r.paid ? 'ticked Paid (tap to untick in this record)' : 'not ticked (tap to tick in this record)'}">${r.paid ? '✓' : ''}</button>`}
       <span class="lm-name">${escapeHtml(r.name)}<small>due ${lmDate(r.dueDate)}${tag(r) ? ' · ' + escapeHtml(tag(r)) : ''}</small></span>
       <span class="lm-amt">${money(r.amount||0)}</span></div>`;
   const payRow = r => `<div class="lm-row ${r.paid ? 'done' : ''}">
       <button class="lm-tick" data-lm="${r.i}" type="button" title="received?">${r.paid ? '✓' : ''}</button>
       <span class="lm-name">${escapeHtml(r.name)}<small>${lmDate(r.date)} · ${r.paid ? 'received' : 'not ticked received'}</small></span>
       <span class="lm-amt">${money(r.amount||0)}</span></div>`;
-  el.innerHTML = head + sum
+  el.innerHTML = head + sum + skipLine
     + `<div class="lm-h">Bills</div><div class="lm-list">${bills.map(billRow).join('') || '<span class="lm-note">No bills.</span>'}</div>`
     + `<div class="lm-h">Paychecks</div><div class="lm-list">${pays.map(payRow).join('')}</div>`
     + `<p class="lm-note">Saved when you advanced on ${lmDate(h.at)}. A bill you paid but forgot to tick: tap its box here to fix the record. A bill you really didn't pay is still owed, so add it to this month's Payment Schedule. Ticks here don't change this month.</p>`;
@@ -2879,13 +2917,14 @@ function renderChecking(){
         ${r.mirror ? `<span class="tag-held share" title="your share of ${escapeHtml(partnerName())}'s bill">to ${escapeHtml(partnerName())}</span>` : ''}
         ${r.payoff ? `<span class="tag-held payoff" title="paying this debt off; covers the normal ${money(r.payoff.min||0)} minimum">payoff</span>` : ''}
         ${r.hold ? `<span class="tag-held hold" title="normally ${money(r.hold.min||0)}; paid off in one go in ${ymLabel(r.hold.until)}">on hold · ${ymLabel(r.hold.until, true)}</span>` : ''}
-        ${r.paid ? '<span class="tag-paid">paid</span>' : r.hold ? '' : [
+        ${r.skip ? `<span class="tag-held skip" title="optional bill, skipped this month (normally ${money(r.skip.amount||0)})">skipped</span>` : ''}
+        ${r.paid ? '<span class="tag-paid">paid</span>' : (r.hold || r.skip) ? '' : [
             (!c.heldIds.has(r.id) && (r.dueDate||'') < c.today) ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : '',
             !c.heldIds.has(r.id) ? ''
               : c.heldNowIds.has(r.id) ? `<span class="tag-held ${c.catOf(r)}" title="paid with money held from the last paycheck, kept in ${c.catOf(r)}">held over · ${c.catOf(r)}</span>`
-              : `<span class="tag-held ${c.catOf(r)}" title="this month's is done; this paycheck sets money aside (in ${c.catOf(r)}) for the next one. Pay By in the schedule: ${lmDate(r.dueDate)}">set aside · ${c.catOf(r)}</span>`
+              : `<span class="tag-held ${c.catOf(r)}" title="this month's is done; this paycheck sets money aside (in ${c.catOf(r)}) for the next one. Pay By in the schedule: ${shortDate(r.dueDate)}">set aside · ${c.catOf(r)}</span>`
           ].join('')}
-        <span class="dt">${c.heldIds.has(r.id) ? shortDate(c.nextDue[r.id]) : r.dueDate ? lmDate(r.dueDate) : '—'}</span>
+        <span class="dt">${c.heldIds.has(r.id) ? shortDate(c.nextDue[r.id]) : r.dueDate ? shortDate(r.dueDate) : '—'}</span>
         <span class="am">${money(r.amount)}</span>
       </div>`).join('')
     : '<div class="ck-empty">No bills set to this paycheck.</div>';
@@ -3509,7 +3548,7 @@ function personHtml(S, who, name, color, isMe){
       <summary><div><div class="gt">${escapeHtml(g.inc.name)} · ${shortDate(g.inc.date)}</div>
         <div class="gs">${g.inc.paid ? 'received · ' : ''}${g.unpaid.length} to pay${g.all.length>g.unpaid.length ? ` · ${g.all.length-g.unpaid.length} paid` : ''} · predicted <b class="${cls(g.predicted)}">${money(g.predicted)}</b>${g.actual!==null ? ` · actual <b class="${cls(g.actual)}">${money(g.actual)}</b>` : ''}</div></div>
         <div class="gtot">${money(g.total)}</div></summary>
-      <div class="gb">${g.all.length ? g.all.map(r=>`<div class="p-bill${r.paid?' paid':''}"><span class="nm">${escapeHtml(r.name)}${r.split ? ' <span class="tag-held share">split</span>' : ''}${r.mirror ? ' <span class="tag-held share">transfer</span>' : ''}${r.payoff ? ' <span class="tag-held payoff">payoff</span>' : ''}${r.hold ? ' <span class="tag-held hold">on hold</span>' : ''}</span><span class="dt">${lmDate(r.dueDate)}</span><span class="am">${money(r.amount)}</span></div>`).join('') : '<div class="cb-note">No bills on this paycheck.</div>'}</div>
+      <div class="gb">${g.all.length ? g.all.map(r=>`<div class="p-bill${r.paid?' paid':''}"><span class="nm">${escapeHtml(r.name)}${r.split ? ' <span class="tag-held share">split</span>' : ''}${r.mirror ? ' <span class="tag-held share">transfer</span>' : ''}${r.payoff ? ' <span class="tag-held payoff">payoff</span>' : ''}${r.hold ? ' <span class="tag-held hold">on hold</span>' : ''}${r.skip ? ' <span class="tag-held skip">skipped</span>' : ''}</span><span class="dt">${shortDate(r.dueDate)}</span><span class="am">${money(r.amount)}</span></div>`).join('') : '<div class="cb-note">No bills on this paycheck.</div>'}</div>
     </details>`).join('') || '<div class="cb-note">No paychecks on the schedule yet.</div>';
   const next = c.next ? `Next payday: <b>${escapeHtml(c.next.name)}</b> on ${shortDate(c.next.date)} (${c.days===1 ? 'tomorrow' : `in ${c.days} days`}) · ${money(c.next.amount)}` : 'No payday left on the schedule.';
   const upd = isMe ? '' : (partner && partner.loadedAt ? `checked ${Math.max(0, Math.round((Date.now()-partner.loadedAt)/60000))} min ago` : '');
