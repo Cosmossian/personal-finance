@@ -106,6 +106,23 @@ button.advance{
 button.advance:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--shadow);}
 button.advance:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow);}
 
+/* ---------- Look at last month ---------- */
+#lastMonthPanel{border-color:var(--plum);margin-top:-14px;}
+.lm-sum{font-size:14px;margin:0 0 12px;}
+.lm-sum b{font-family:var(--mono);}
+.lm-list{display:flex;flex-direction:column;gap:6px;}
+.lm-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--line-soft);border-radius:12px;background:var(--surface-2);font-size:14px;}
+.lm-row.unpaid{border-color:var(--red);}
+.lm-row .lm-name{flex:1;min-width:0;}
+.lm-row .lm-name small{display:block;color:var(--muted);font-size:12px;}
+.lm-row .lm-amt{font-family:var(--mono);white-space:nowrap;}
+.lm-tick{flex:none;width:30px;height:30px;border-radius:9px;border:2px solid var(--line);background:none;color:var(--ink);font-size:16px;font-weight:800;cursor:pointer;}
+.lm-row.done .lm-tick{background:var(--vault);border-color:#000;color:#0B140E;}
+.lm-row.unpaid .lm-tick{border-color:var(--red);}
+.lm-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;}
+.lm-note{font-size:12.5px;color:var(--muted);margin:12px 0 0;max-width:70ch;}
+@media (max-width:600px){ #lastMonthBtn{margin-left:0 !important;width:100%;justify-content:center;} }
+
 /* ---------- panels ---------- */
 .panel{background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:18px 20px 20px;margin-bottom:24px;box-shadow:5px 5px 0 var(--shadow);}
 .panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
@@ -709,8 +726,10 @@ tfoot td:first-child{font-family:var(--body);font-weight:800;text-transform:uppe
 
   <div class="advance-bar">
     <span>Advancing moves every paycheck and due date forward one calendar month, on the same day of month, and takes this month’s payment off each credit balance.</span>
-    <button class="advance" id="advanceBtn">Advance a month →</button>
+    <button class="btn" id="lastMonthBtn" type="button" style="margin-left:auto">📅 Look at last month</button>
+    <button class="advance" id="advanceBtn" style="margin-left:0">Advance a month →</button>
   </div>
+  <div class="panel" id="lastMonthPanel" style="display:none"></div>
 
   <div class="panel" id="checkingPanel">
     <div class="panel-head">
@@ -1377,6 +1396,7 @@ function render(){
   renderBalance();
   renderPlanning();
   renderDual();
+  renderLastMonth();
 }
 
 function incomeRows(){ return data.pay.filter(r=>r.type==='income').sort((a,b)=>a.date.localeCompare(b.date)); }
@@ -2542,6 +2562,7 @@ document.getElementById('check3rd').addEventListener('click', ()=>{
 
 document.getElementById('advanceBtn').addEventListener('click', ()=>{
   pushUndoSnapshot();
+  saveMonthHistory();
   const leftover = renderHero();
   const nextPaycheckDate = incomeRows()[0] ? addMonths(incomeRows()[0].date, 1) : addMonths(todayISO(),1);
 
@@ -2601,6 +2622,74 @@ document.getElementById('advanceBtn').addEventListener('click', ()=>{
   queueSave();
   const n = Object.keys(debtGroups).length;
   if(n || released.length || byDueNow) flashSave(`advanced a month${n ? ` · ${money(round2(tookOff))} off ${n} debt balance${n===1?'':'s'}` : ''}${paidOff.length ? ' · paid off: ' + paidOff.join(', ') + ' 🎉 (taken off your bills)' : ''}${released.length ? ' · ' + released.join(' · ') : ''}${byDueNow ? ' · bills now go under the payday before they\'re due' : ''}`, false, (released.length || byDueNow) ? 7000 : 4500);
+});
+
+// ================= Look at last month =================
+// Advance a month clears every Paid tick, so right before it does, a copy of the month being closed
+// (paychecks + bills, with their ticks) goes into data.history (newest first, last 12 kept).
+// "Look at last month" shows it so Dylan can check he ticked everything. Undo of the advance removes it.
+const HISTORY_LIMIT = 12;
+let lastMonthOpen = false, lastMonthIdx = 0;
+function saveMonthHistory(){
+  const inc = incomeRows();
+  const ref = (inc[0] && inc[0].date) || todayISO();
+  const label = new Date(ref+'T00:00:00').toLocaleDateString(undefined,{month:'long', year:'numeric'});
+  const pcs = {}; inc.forEach(i=>{ pcs[i.id] = i.name; });
+  const rows = data.pay.map(r => r.type==='income'
+    ? {type:'income', name:r.name, date:r.date, amount:r.amount||0, paid:!!r.paid}
+    : {type:'bill', name:r.name, dueDate:r.dueDate, amount:r.amount||0, paid:!!r.paid, paycheck: pcs[r.paycheckId] || '',
+       isCredit:!!r.isCredit, held:!!r.hold, payoff:!!r.payoff, mirror:!!r.mirror});
+  data.history = Array.isArray(data.history) ? data.history : [];
+  data.history.unshift({month: label, at: todayISO(), rows});
+  if(data.history.length > HISTORY_LIMIT) data.history.length = HISTORY_LIMIT;
+  lastMonthIdx = 0;
+}
+function lmDate(iso){ return iso ? new Date(iso+'T00:00:00').toLocaleDateString(undefined,{month:'short', day:'numeric'}) : ''; }
+function renderLastMonth(){
+  const el = document.getElementById('lastMonthPanel');
+  const btn = document.getElementById('lastMonthBtn');
+  if(btn) btn.textContent = lastMonthOpen ? '✕ Close last month' : '📅 Look at last month';
+  if(!el) return;
+  el.style.display = lastMonthOpen ? '' : 'none';
+  if(!lastMonthOpen) return;
+  const hist = Array.isArray(data.history) ? data.history : [];
+  const head = `<div class="panel-head"><div class="panel-title"><span class="ptile" style="background:var(--plum)"><svg viewBox="0 0 32 32" fill="none" stroke="#0B140E" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="24" height="22" rx="3"/><path d="M4 13h24M11 3v6M21 3v6"/></svg></span><h2>${hist.length ? 'Look back' : 'Last month'}</h2></div>${hist.length > 1 ? `<select id="lmPick">${hist.map((h,i)=>`<option value="${i}" ${i===lastMonthIdx?'selected':''}>${escapeHtml(h.month)}</option>`).join('')}</select>` : ''}</div>`;
+  if(!hist.length){
+    el.innerHTML = head + `<p class="panel-sub">Nothing saved yet. From now on, every time you tap <b>Advance a month</b>, the month you're leaving (bills, paychecks and which ones you ticked Paid) is saved here first.</p>
+      <p class="lm-note">Already advanced before this button existed? If that tab is still open and hasn't been refreshed, tap <b>↶ Undo</b> at the top until the dates go back, check your ticks, then advance again. That advance will be saved here.</p>`;
+    return;
+  }
+  if(lastMonthIdx >= hist.length) lastMonthIdx = 0;
+  const h = hist[lastMonthIdx];
+  const bills = h.rows.map((r,i)=>({...r, i})).filter(r=>r.type==='bill').sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  const pays = h.rows.map((r,i)=>({...r, i})).filter(r=>r.type==='income').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const needs = bills.filter(r=>!r.held && (r.amount||0) > 0);
+  const unpaid = needs.filter(r=>!r.paid);
+  const sum = unpaid.length
+    ? `<p class="lm-sum">${escapeHtml(h.month)}: <b>${needs.length - unpaid.length} of ${needs.length}</b> bills ticked Paid. <span style="color:var(--red);font-weight:700">Not ticked: ${unpaid.map(r=>escapeHtml(r.name)).join(', ')}</span> (${money(round2(unpaid.reduce((s,r)=>s+(r.amount||0),0)))}).</p>`
+    : `<p class="lm-sum">${escapeHtml(h.month)}: <b>all ${needs.length}</b> bills ticked Paid ✓</p>`;
+  const tag = r => [r.paycheck, r.isCredit ? 'credit' : '', r.held ? 'on hold' : '', r.payoff ? 'payoff' : '', r.mirror ? 'share' : ''].filter(Boolean).join(' · ');
+  const billRow = r => `<div class="lm-row ${r.paid ? 'done' : (r.held || !(r.amount>0) ? '' : 'unpaid')}">
+      <button class="lm-tick" data-lm="${r.i}" type="button" title="${r.paid ? 'ticked Paid (tap to untick in this record)' : 'not ticked (tap to tick in this record)'}">${r.paid ? '✓' : ''}</button>
+      <span class="lm-name">${escapeHtml(r.name)}<small>due ${lmDate(r.dueDate)}${tag(r) ? ' · ' + escapeHtml(tag(r)) : ''}</small></span>
+      <span class="lm-amt">${money(r.amount||0)}</span></div>`;
+  const payRow = r => `<div class="lm-row ${r.paid ? 'done' : ''}">
+      <button class="lm-tick" data-lm="${r.i}" type="button" title="received?">${r.paid ? '✓' : ''}</button>
+      <span class="lm-name">${escapeHtml(r.name)}<small>${lmDate(r.date)} · ${r.paid ? 'received' : 'not ticked received'}</small></span>
+      <span class="lm-amt">${money(r.amount||0)}</span></div>`;
+  el.innerHTML = head + sum
+    + `<div class="lm-h">Bills</div><div class="lm-list">${bills.map(billRow).join('') || '<span class="lm-note">No bills.</span>'}</div>`
+    + `<div class="lm-h">Paychecks</div><div class="lm-list">${pays.map(payRow).join('')}</div>`
+    + `<p class="lm-note">Saved when you advanced on ${lmDate(h.at)}. A bill you paid but forgot to tick: tap its box here to fix the record. A bill you really didn't pay is still owed, so add it to this month's Payment Schedule. Ticks here don't change this month.</p>`;
+  const pick = document.getElementById('lmPick');
+  if(pick) pick.onchange = ()=>{ lastMonthIdx = parseInt(pick.value)||0; renderLastMonth(); };
+  el.querySelectorAll('[data-lm]').forEach(b=>{
+    b.onclick = ()=>{ pushUndoSnapshot(); const r = data.history[lastMonthIdx].rows[parseInt(b.dataset.lm)]; r.paid = !r.paid; renderLastMonth(); queueSave(); };
+  });
+}
+document.getElementById('lastMonthBtn').addEventListener('click', ()=>{
+  lastMonthOpen = !lastMonthOpen; lastMonthIdx = 0; renderLastMonth();
+  if(lastMonthOpen) document.getElementById('lastMonthPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
 });
 
 // ================= Checking, Savings Goals, account cards =================
@@ -2794,9 +2883,9 @@ function renderChecking(){
             (!c.heldIds.has(r.id) && (r.dueDate||'') < c.today) ? `<span class="tag-overdue" title="due ${daysBetween(r.dueDate, c.today)} days ago">${daysBetween(r.dueDate, c.today) > 60 ? 'overdue · check date?' : 'overdue'}</span>` : '',
             !c.heldIds.has(r.id) ? ''
               : c.heldNowIds.has(r.id) ? `<span class="tag-held ${c.catOf(r)}" title="paid with money held from the last paycheck, kept in ${c.catOf(r)}">held over · ${c.catOf(r)}</span>`
-              : `<span class="tag-held ${c.catOf(r)}" title="this month's is done; this paycheck sets money aside (in ${c.catOf(r)}) for the next one. Pay By in the schedule: ${shortDate(r.dueDate)}">set aside · ${c.catOf(r)}</span>`
+              : `<span class="tag-held ${c.catOf(r)}" title="this month's is done; this paycheck sets money aside (in ${c.catOf(r)}) for the next one. Pay By in the schedule: ${lmDate(r.dueDate)}">set aside · ${c.catOf(r)}</span>`
           ].join('')}
-        <span class="dt">${c.heldIds.has(r.id) ? shortDate(c.nextDue[r.id]) : r.dueDate ? shortDate(r.dueDate) : '—'}</span>
+        <span class="dt">${c.heldIds.has(r.id) ? shortDate(c.nextDue[r.id]) : r.dueDate ? lmDate(r.dueDate) : '—'}</span>
         <span class="am">${money(r.amount)}</span>
       </div>`).join('')
     : '<div class="ck-empty">No bills set to this paycheck.</div>';
@@ -3420,7 +3509,7 @@ function personHtml(S, who, name, color, isMe){
       <summary><div><div class="gt">${escapeHtml(g.inc.name)} · ${shortDate(g.inc.date)}</div>
         <div class="gs">${g.inc.paid ? 'received · ' : ''}${g.unpaid.length} to pay${g.all.length>g.unpaid.length ? ` · ${g.all.length-g.unpaid.length} paid` : ''} · predicted <b class="${cls(g.predicted)}">${money(g.predicted)}</b>${g.actual!==null ? ` · actual <b class="${cls(g.actual)}">${money(g.actual)}</b>` : ''}</div></div>
         <div class="gtot">${money(g.total)}</div></summary>
-      <div class="gb">${g.all.length ? g.all.map(r=>`<div class="p-bill${r.paid?' paid':''}"><span class="nm">${escapeHtml(r.name)}${r.split ? ' <span class="tag-held share">split</span>' : ''}${r.mirror ? ' <span class="tag-held share">transfer</span>' : ''}${r.payoff ? ' <span class="tag-held payoff">payoff</span>' : ''}${r.hold ? ' <span class="tag-held hold">on hold</span>' : ''}</span><span class="dt">${shortDate(r.dueDate)}</span><span class="am">${money(r.amount)}</span></div>`).join('') : '<div class="cb-note">No bills on this paycheck.</div>'}</div>
+      <div class="gb">${g.all.length ? g.all.map(r=>`<div class="p-bill${r.paid?' paid':''}"><span class="nm">${escapeHtml(r.name)}${r.split ? ' <span class="tag-held share">split</span>' : ''}${r.mirror ? ' <span class="tag-held share">transfer</span>' : ''}${r.payoff ? ' <span class="tag-held payoff">payoff</span>' : ''}${r.hold ? ' <span class="tag-held hold">on hold</span>' : ''}</span><span class="dt">${lmDate(r.dueDate)}</span><span class="am">${money(r.amount)}</span></div>`).join('') : '<div class="cb-note">No bills on this paycheck.</div>'}</div>
     </details>`).join('') || '<div class="cb-note">No paychecks on the schedule yet.</div>';
   const next = c.next ? `Next payday: <b>${escapeHtml(c.next.name)}</b> on ${shortDate(c.next.date)} (${c.days===1 ? 'tomorrow' : `in ${c.days} days`}) · ${money(c.next.amount)}` : 'No payday left on the schedule.';
   const upd = isMe ? '' : (partner && partner.loadedAt ? `checked ${Math.max(0, Math.round((Date.now()-partner.loadedAt)/60000))} min ago` : '');
